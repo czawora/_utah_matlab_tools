@@ -74,6 +74,6 @@ function calcWindowStats(data_mat, sampling_freq, output_fpath, chan_names)
     
 
     fprintf('saving quantiles mat\n');
-    save(output_fpath, 'hist_edges', 'hist_n', 'quantile_mats', 'mean_mats', 'std_mats', 'rms_stats', 'chan_names', 'start_windows', 'sampling_freq', 'samples_per_sec', 'num_data_samples', 'quantile_cutoffs');
+    save(output_fpath, 'hist_edges', 'hist_n', 'quantile_mats', 'mean_mats', 'std_mats', 'rms_mats', 'chan_names', 'start_windows', 'sampling_freq', 'samples_per_sec', 'num_data_samples', 'quantile_cutoffs');
 
 end
