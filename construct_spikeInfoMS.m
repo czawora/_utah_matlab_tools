@@ -237,7 +237,7 @@ processed_units = 1;
 %for each channel file, add the data to the struct
 for iChan = 1:size(data_cmat, 1)
     
-    data_cmat(iChan,:)
+    data_cmat(iChan,:);
     
     currentFirings = data_cmat{iChan, firings_col};
     currentClips = data_cmat{iChan, clips_col};    
