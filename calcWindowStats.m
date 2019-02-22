@@ -11,7 +11,7 @@ function calcWindowStats(data_mat, sampling_freq, output_fpath, chan_names)
 
     window_move_num = floor(samples_per_sec/2);
 
-    quantile_cutoffs = [0.001 0.01 0.10 0.50 0.90 0.99 0.999];
+    quantile_cutoffs = [0.001 0.01 0.99 0.999];
 
     quantile_mats = cell(length(quantile_cutoffs), 1);
     mean_mats = [];
