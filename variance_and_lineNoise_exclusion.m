@@ -1,5 +1,6 @@
 function variance_and_lineNoise_exclusion(varargin)
 
+    echo variance_and_lineNoise_exclusion on;
     fprintf('****************************************************\n');
     fprintf('* %s\n', mfilename);
 

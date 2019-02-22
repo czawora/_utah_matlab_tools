@@ -1,5 +1,7 @@
 function filter_downsample_detrend_rmLineNoise(varargin)
 
+    echo filter_downsample_detrend_rmLineNoise on;
+    
     fprintf('****************************************************\n');
     fprintf('* %s\n', mfilename);
 

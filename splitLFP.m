@@ -1,5 +1,7 @@
 function splitLFP(varargin)
 
+    echo splitLFP on;
+    
     fprintf('****************************************************\n');
     fprintf('* %s\n', mfilename);
 

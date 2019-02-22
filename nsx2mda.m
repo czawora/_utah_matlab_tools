@@ -1,5 +1,6 @@
 function nsx2mda(varargin)
 
+    echo nsx2mda on;
     % this function reads an nsx file as well as an elementInfo (containing a list of channel name inclusion strings)
     % channels from the nsx file are included in the output mda file if they pass two criteria: 
     % 1) the channel name must include one of the channel name inclusion strings in elementInfo as a substring

@@ -1,5 +1,6 @@
 function construct_spikeInfoMS(varargin)
 
+echo construct_spikeInfoMS on;
  %NIH034_151001_1317_utah2_u
 % construct_spikeInfoMS_edits('saveRoot','/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/outputs', 'nev_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.nev', 'elementInfo_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2_elementInfo.txt', 'nsx_physio_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.ns6', 'bp_fname_suffix', 'mda_chan', 'subj_str', 'NIH034', 'time_str', '151001_1317', 'nsp_str', 'utah2', 'sessRoot', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/splits');
 

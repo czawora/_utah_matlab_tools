@@ -1,5 +1,6 @@
 function calcWindowStats(data_mat, sampling_freq, output_fpath, chan_names)
 
+    echo calcWindowStats on;
     if size(data_mat, 1) ~= length(chan_names)
         error('number of chan_names must match number of channels in data_mat (rows)');
     end

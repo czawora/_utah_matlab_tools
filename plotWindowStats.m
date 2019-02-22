@@ -1,5 +1,7 @@
 function plotWindowStats(raw_stats_fpath, bandpass_stats_fpath, reref_stats_fpath, whiten_stats_fpath, output_fpath)
 
+    echo plotWindowStats on;
+    
     raw_stats = load(raw_stats_fpath);
     bandpass_stats = load(bandpass_stats_fpath);
     reref_stats = load(reref_stats_fpath);

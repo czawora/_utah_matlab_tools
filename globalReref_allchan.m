@@ -1,5 +1,6 @@
 function globalReref_allchan(input_fpath, output_fpath, refset, used_chan_fpath)
 
+    echo globalReref_allchan on;
     fprintf('starting\n');
 
     if ~exist(input_fpath, 'file')

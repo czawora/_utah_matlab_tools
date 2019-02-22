@@ -1,6 +1,6 @@
 function splitmda(varargin)
 
-
+    echo splitmda on;
     % parse inputs and validate
 
     fprintf('****************************************************\n');
