@@ -27,7 +27,7 @@ function calcWindowStats(data_mat, sampling_freq, output_fpath, chan_names)
 
        start_windows = [ start_windows start_window_idx ];
         
-       fprintf('total samples: %d, start: %d - stop: %d -- %0.2f \n', num_data_samples, start_window_idx, stop_window_idx, (stop_window_idx/num_data_samples) * 100); 
+       %fprintf('total samples: %d, start: %d - stop: %d -- %0.2f \n', num_data_samples, start_window_idx, stop_window_idx, (stop_window_idx/num_data_samples) * 100); 
 
        %window_data is a time x channel matrix 
        window_data = double(data_mat(:, start_window_idx:stop_window_idx)');
