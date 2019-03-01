@@ -58,7 +58,7 @@ function splitmda(varargin)
     load([input_path '/samplingFreq.mat']);
     
     whiten_quantile_output_fpath = [input_path '/whiten_'  sprintf('quantiles.refset%d.mat', refset)];
-    calcWindowStats(mda, sampling_freq, whiten_quantile_output_fpath, used_chans);
+    %calcWindowStats(mda, sampling_freq, whiten_quantile_output_fpath, used_chans);
 
     
     for iChan = 1:size(mda, 1)

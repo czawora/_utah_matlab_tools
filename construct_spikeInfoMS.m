@@ -455,14 +455,14 @@ end
 %plot the quantile stat figs
 for iRefset = 1:num_refsets
     
-   raw_quantile_mat_fpath = [ saveRoot sprintf('/../raw_quantiles.refset%d.mat', iRefset) ];
-   bandpass_quantile_mat_fpath = [ saveRoot sprintf('/../bandpass_quantiles.refset%d.mat', iRefset) ];
+%    raw_quantile_mat_fpath = [ saveRoot sprintf('/../raw_quantiles.refset%d.mat', iRefset) ];
+%    bandpass_quantile_mat_fpath = [ saveRoot sprintf('/../bandpass_quantiles.refset%d.mat', iRefset) ];
    reref_quantile_mat_fpath = [ saveRoot sprintf('/../reref_quantiles.refset%d.mat', iRefset) ];
-   whiten_quantile_mat_fpath = [ saveRoot sprintf('/../whiten_quantiles.refset%d.mat', iRefset) ];
+%    whiten_quantile_mat_fpath = [ saveRoot sprintf('/../whiten_quantiles.refset%d.mat', iRefset) ];
 
    quantile_save_root = [traceFigs_saveRoot '/' sess];  
     
-   plotWindowStats(raw_quantile_mat_fpath, bandpass_quantile_mat_fpath, reref_quantile_mat_fpath, whiten_quantile_mat_fpath, quantile_save_root);
+   plotWindowStats('', '', reref_quantile_mat_fpath, '', quantile_save_root);
 end
 
 

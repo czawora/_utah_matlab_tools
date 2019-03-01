@@ -214,7 +214,7 @@ function nsx2mda(varargin)
 
                 writemda(nsx.Data(current_refset_idx, :), output_mda_fname, 'int16');
                 
-                calcWindowStats(nsx.Data(current_refset_idx, :), nsx.MetaTags.SamplingFreq, [output_dir '/raw_'  sprintf('quantiles.refset%d.mat', iRef)], current_refset_chan_names)
+                %calcWindowStats(nsx.Data(current_refset_idx, :), nsx.MetaTags.SamplingFreq, [output_dir '/raw_'  sprintf('quantiles.refset%d.mat', iRef)], current_refset_chan_names);
                 
                 sampling_freq = nsx.MetaTags.SamplingFreq;
                 save([output_dir '/samplingFreq.mat'], 'sampling_freq');

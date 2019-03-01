@@ -27,7 +27,7 @@ function globalReref_allchan(input_fpath, output_fpath, refset, used_chan_fpath)
     used_chans = used_chans{1};
     fclose(used_chans_fid);
     
-    calcWindowStats(input_data, sampling_freq, bandpass_quantile_output_fpath, used_chans);
+    %calcWindowStats(input_data, sampling_freq, bandpass_quantile_output_fpath, used_chans);
     
     fprintf('mean_calc\n');
     global_avg = mean(input_data, 1);
