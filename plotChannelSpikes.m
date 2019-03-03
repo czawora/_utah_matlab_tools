@@ -1,6 +1,7 @@
 function plotChannelSpikes(varargin)
 
-      echo plotChannelSpikes on;
+      fprintf('starting plotChannelSpikes %s\n', datetime('now'));
+      %echo plotChannelSpikes on;
 %     plotChannelSpikes('session_name', 'test', ...
 %     'channel_num', '59', ...
 %     'clip_features', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/clip_features.mda', ...
@@ -313,7 +314,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %waveform figure - top left ( fine to run if unit contains only single spike)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+        fprintf('waveform fig %s\n', datetime('now'));
         current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{1,1}, 'replace');
         hold on;
 
@@ -446,6 +447,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %PCA figures ( fine to run if unit contains only single spike)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plotting PCA %s\n', datetime('now'));
 
         %uncolored PCA
         hold off;
@@ -591,6 +593,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %time-voltage figures ( fine to run if unit contains only single spike )
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plotting time-voltage %s\n', datetime('now'));
 
         hold off;
         current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{1,3} ,'replace');
@@ -798,6 +801,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %spike ISI distribution figures
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plot spike ISI %s\n', datetime('now'));
 
         if on_panels(4) == 1
 
@@ -820,9 +824,10 @@ function plotChannelSpikes(varargin)
                     txt = '> 3 units, see extra figure';
                     text(5, 5, txt, 'FontSize', 14, 'HorizontalAlignment', 'center');
 
+                    if total_unit_num < 10
                     %passing all the necessary items to make a plot
-                    plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_width_scalar, unit_hist_height_scalar, [saveDir '/' session_name_underscore '_' current_chan '_hist.png']);
-
+                        plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_width_scalar, unit_hist_height_scalar, [saveDir '/' session_name_underscore '_' current_chan '_hist.png']);
+                    end
                     figure(1);%set gcf back to main figure
 
                 %no seperate figure needed, plot the unit ISI histograms as usual    
@@ -1010,6 +1015,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %metrics figures
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plot metrics %s\n', datetime('now'));
 
         hold off;
         current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{3,1},'replace');
@@ -1146,6 +1152,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %example trace figures
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plot example traces %s\n', datetime('now'));
 
         hold off;
         current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{3,2}(1:subplot_cols_per_display_col) ,'replace');
@@ -1199,6 +1206,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %spike rate figures
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plot spikerates %s\n', datetime('now'));
 
         hold off;
         current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{3,3} ,'replace');
@@ -1308,6 +1316,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % data variance plot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        fprintf('plot timeseries %s\n', datetime('now'));
 
         
         hold off;
@@ -1348,6 +1357,8 @@ function plotChannelSpikes(varargin)
         
         tightfig();
         set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
+        fprintf('save fig %s\n', datetime('now'));
+
         print(gcf,[saveDir '/' session_name_underscore '_' current_chan '.png'],'-dpng','-r300');
         
         %export_fig([ms_figDir '/' session_name_no_spaces '_' current_chan '.bmp'], '-bmp', '-painters');
