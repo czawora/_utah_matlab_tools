@@ -83,11 +83,14 @@ used_chan_by_refset = cell(num_refsets, 1);
 for iRefset = 1:num_refsets
     
     used_chans_fname_string = sprintf('refset%d_used_chans.txt', iRefset);
+    fprintf('used_chans_fname_string: %s\n', used_chans_fname_string);
     
     for iFile = 1:length(used_chan_dir_fnames)
         
+       fprintf('looking for used_chans: %s\n', used_chan_dir_fnames{iFile});
        if contains(used_chan_dir_fnames{iFile}, used_chans_fname_string)
           
+           fprintf('choosing: %s\n', used_chan_dir_fnames{iFile});
            used_chan_fpath = [sessRoot '/../' used_chan_dir_fnames{iFile}];
            
            used_chan_fid = fopen(used_chan_fpath);

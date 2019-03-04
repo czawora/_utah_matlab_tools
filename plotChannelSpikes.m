@@ -325,7 +325,7 @@ function plotChannelSpikes(varargin)
 
         if on_panels(1) == 1
 
-            fprintf('\t-- plotting real panel %d for chan %s\n', 1, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 1, current_chan);
 
             ylabel('uV');
             %set bg color
@@ -343,7 +343,7 @@ function plotChannelSpikes(varargin)
             for n = 1:length(noise_units)
 
                 current_nz = noise_units(n);
-                fprintf('\t\t-- plotting real panel %d for noise %d\n', 1, n);
+                %fprintf('\t\t-- plotting real panel %d for noise %d\n', 1, n);
 
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
@@ -383,7 +383,7 @@ function plotChannelSpikes(varargin)
 
             for u = 1:length(good_units)
 
-                fprintf('\t\t-- plotting real panel %d for unit %d\n', 1, u);
+                %fprintf('\t\t-- plotting real panel %d for unit %d\n', 1, u);
 
 
                 current_unit = good_units(u);
@@ -440,7 +440,7 @@ function plotChannelSpikes(varargin)
             title( [session_name ' ' current_chan] );
             
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 1, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 1, current_chan);
             plot(1:10, 1:10);
         end
 
@@ -459,7 +459,7 @@ function plotChannelSpikes(varargin)
 
         if on_panels(2) == 1
 
-            fprintf('\t-- plotting real panel %d for chan %s\n', 2, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 2, current_chan);
 
             xlabel('PC 1');
             ylabel('PC 2');
@@ -469,7 +469,7 @@ function plotChannelSpikes(varargin)
 
             for n = 1:length(noise_units)
 
-                fprintf('\t\t-- plotting real panel %d for noise %d\n', 2, n);
+                %fprintf('\t\t-- plotting real panel %d for noise %d\n', 2, n);
 
                 current_nz = noise_units(n);
                 
@@ -485,7 +485,7 @@ function plotChannelSpikes(varargin)
 
             for u = 1:length(good_units)
 
-                fprintf('\t\t-- plotting real panel %d for unit %d\n', 2, u);
+                %fprintf('\t\t-- plotting real panel %d for unit %d\n', 2, u);
 
                 current_unit = good_units(u);
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit );
@@ -512,7 +512,7 @@ function plotChannelSpikes(varargin)
             ylim([y_low_bound y_hi_bound]);
 
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 2, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 2, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -528,7 +528,7 @@ function plotChannelSpikes(varargin)
 
         if on_panels(5) == 1
 
-            fprintf('\t-- plotting real panel %d for chan %s\n', 5, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 5, current_chan);
 
             xlabel('PC 1');
             ylabel('PC 2');
@@ -538,7 +538,7 @@ function plotChannelSpikes(varargin)
 
             for n = 1:length(noise_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 5, current_chan, n);
+                %fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 5, current_chan, n);
 
                 n_marker = nz_markers( n );
                 current_nz = noise_units(n);
@@ -555,7 +555,7 @@ function plotChannelSpikes(varargin)
 
             for u = 1:length(good_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 5, current_chan, u);
+                %fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 5, current_chan, u);
 
                 u_color = unit_colors( u, : );
                 current_unit = good_units(u);
@@ -584,7 +584,7 @@ function plotChannelSpikes(varargin)
             ylim([y_low_bound y_hi_bound]);
             
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 5, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 5, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -604,7 +604,7 @@ function plotChannelSpikes(varargin)
 
         if on_panels(3) == 1
             
-            fprintf('\t-- plotting real panel %d for chan %s\n', 3, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 3, current_chan);
 
             xlabel('time (min)');
             ylabel('peak-to-trough');
@@ -618,7 +618,7 @@ function plotChannelSpikes(varargin)
            
             for n = 1:length(noise_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 3, current_chan, n);
+                %fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 3, current_chan, n);
 
                 current_nz = noise_units(n);
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
@@ -650,7 +650,7 @@ function plotChannelSpikes(varargin)
             
             for u = 1:length(good_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 3, current_chan, u);
+                %fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 3, current_chan, u);
 
                 current_unit = good_units(u);
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit);
@@ -691,7 +691,7 @@ function plotChannelSpikes(varargin)
             ylim([y_low_bound y_hi_bound]);
 
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 3, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 3, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -704,7 +704,7 @@ function plotChannelSpikes(varargin)
         set(gca, 'Position', [s(1), s(2), s(3)* full_subplot_width_scalar, s(4)* full_subplot_height_scalar ]);
 
         if on_panels(6) == 1
-            fprintf('\t-- plotting real panel %d for chan %s\n', 6, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 6, current_chan);
 
             xlabel('time (min)');
             ylabel('peak-to-trough');
@@ -718,7 +718,7 @@ function plotChannelSpikes(varargin)
             
             for n = 1:length(noise_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 6, current_chan, n);
+                %fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 6, current_chan, n);
 
                 n_marker = nz_markers( mod(n, length(nz_markers)) );
                 current_nz = noise_units(n);
@@ -751,7 +751,7 @@ function plotChannelSpikes(varargin)
 
             for u = 1:length(good_units)
 
-                fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 6, current_chan, u);
+                %fprintf('\t\t-- plotting real panel %d for chan %s unit %d\n', 6, current_chan, u);
 
                 u_color = unit_colors( u , :);
                 
@@ -793,7 +793,7 @@ function plotChannelSpikes(varargin)
             ylim([y_low_bound y_hi_bound]);
 
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 6, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 6, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -809,7 +809,7 @@ function plotChannelSpikes(varargin)
                 %a seperate figure will be made for these hist ISI plots
                 if length(noise_units) + length(good_units) > 3
 
-                    fprintf('\t-- plotting SEPERATE panel %d for chan %s\n', 4, current_chan);
+                    %fprintf('\t-- plotting SEPERATE panel %d for chan %s\n', 4, current_chan);
 
                     hold off;
                     current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{2,1} ,'replace');
@@ -833,8 +833,8 @@ function plotChannelSpikes(varargin)
                 %no seperate figure needed, plot the unit ISI histograms as usual    
                 else
 
-                    fprintf('\t-- plotting real panel %d for chan %s\n', 4, current_chan);
-                    fprintf('\t-- using plot points %d\n', subplot_sections{2,1});
+                    %fprintf('\t-- plotting real panel %d for chan %s\n', 4, current_chan);
+                    %fprintf('\t-- using plot points %d\n', subplot_sections{2,1});
 
                     mini_col_count = 1;
 
@@ -851,7 +851,7 @@ function plotChannelSpikes(varargin)
                             %histogram of spike times ISI for this unit
                             hold off;
                             current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{2,1}(mini_col_count) ,'replace');
-                            fprintf('making hist for noise %d at plot point %d\n', n, subplot_sections{2,1}(mini_col_count));
+                            %fprintf('making hist for noise %d at plot point %d\n', n, subplot_sections{2,1}(mini_col_count));
                             hold on;
 
                              s = get(gca, 'Position');
@@ -876,7 +876,7 @@ function plotChannelSpikes(varargin)
                              current_plot = subplot(subplot_rows, subplot_cols, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col) ,'replace');
                              hold on;
 
-                             fprintf('making hist for noise %d at plot point %d\n', n, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col));
+                             %fprintf('making hist for noise %d at plot point %d\n', n, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col));
 
                              s = get(gca, 'Position');
                              set(gca, 'Position', [s(1), s(2), s(3)*unit_hist_width_scalar, s(4)*unit_hist_height_scalar ]);
@@ -931,7 +931,7 @@ function plotChannelSpikes(varargin)
                              %histogram of spike times ISI for this unit
                              hold off;
                              current_plot = subplot(subplot_rows,subplot_cols, subplot_sections{2,1}(mini_col_count) ,'replace');
-                             fprintf('making hist for unit %d at plot point %d\n', u, subplot_sections{2,1}(mini_col_count));
+                             %fprintf('making hist for unit %d at plot point %d\n', u, subplot_sections{2,1}(mini_col_count));
                              hold on;
 
                              s = get(gca, 'Position');
@@ -958,7 +958,7 @@ function plotChannelSpikes(varargin)
                              current_plot = subplot(subplot_rows, subplot_cols, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col) ,'replace');
                              hold on;
 
-                             fprintf('making hist for unit %d at plot point %d\n', u, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col));
+                             %fprintf('making hist for unit %d at plot point %d\n', u, subplot_sections{2,1}(mini_col_count + subplot_cols_per_display_col));
 
                              s = get(gca, 'Position');
                              set(gca, 'Position', [s(1), s(2),s(3)*unit_hist_width_scalar, s(4)*unit_hist_height_scalar ])
@@ -1003,7 +1003,7 @@ function plotChannelSpikes(varargin)
             end
         else
 
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 4, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 4, current_chan);
 
             hold off;
             subplot(subplot_rows,subplot_cols, subplot_sections{2,1} ,'replace');
@@ -1026,7 +1026,7 @@ function plotChannelSpikes(varargin)
         %set(gca, 'FontSize', font_size);
 
         if on_panels(7) == 1
-            fprintf('\t-- plotting real panel %d for chan %s\n', 7, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 7, current_chan);
             
             %table_font = ;
             
@@ -1144,7 +1144,7 @@ function plotChannelSpikes(varargin)
             end
             
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 7, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 7, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -1163,7 +1163,7 @@ function plotChannelSpikes(varargin)
         set(gca, 'FontSize', font_size);
 
         if on_panels(8) == 1
-            fprintf('\t-- plotting real panel %d for chan %s\n', 8, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 8, current_chan);
 
             top_clip = example_clips(1,:);
             plot(downsample(top_clip, 30), 'k-');
@@ -1173,7 +1173,7 @@ function plotChannelSpikes(varargin)
             ylim([min(top_clip) - ylim_pad max(top_clip) + ylim_pad]);
         
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 8, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 8, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -1187,7 +1187,7 @@ function plotChannelSpikes(varargin)
         set(gca, 'FontSize', font_size);
 
         if on_panels(8) == 1
-            fprintf('\t-- plotting real panel %d for chan %s\n', 8, current_chan);
+            %fprintf('\t-- plotting real panel %d for chan %s\n', 8, current_chan);
 
             bottom_clip = example_clips(2,:);
             plot(downsample(bottom_clip, 30), 'k-');
@@ -1198,7 +1198,7 @@ function plotChannelSpikes(varargin)
             ylim([ (min(bottom_clip) - ylim_pad - 1) (max(bottom_clip) + ylim_pad + 1) ]);
 
         else
-            fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 8, current_chan);
+            %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 8, current_chan);
 
             plot(1:10, 1:10);
         end
@@ -1215,7 +1215,7 @@ function plotChannelSpikes(varargin)
         if ~isempty(good_units)
 
             if on_panels(9) == 1
-                fprintf('\t-- plotting real panel %d for chan %s\n', 9, current_chan);
+                %fprintf('\t-- plotting real panel %d for chan %s\n', 9, current_chan);
 
                 set(gca,'Color','k');
                 set(gca, 'FontSize', font_size);  
@@ -1298,13 +1298,13 @@ function plotChannelSpikes(varargin)
                 xlim([xmn xmx]);
 
             else
-                fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 9, current_chan);
+                %fprintf('\t-- plotting DUMMY panel %d for chan %s\n', 9, current_chan);
 
                 plot(1:10, 1:10);
             end
 
         else
-            fprintf('\t-- plotting EMPTY panel %d for chan %s\n', 9, current_chan);
+            %fprintf('\t-- plotting EMPTY panel %d for chan %s\n', 9, current_chan);
 
             plot(1:10, 1:10);
             hold on;
@@ -1399,7 +1399,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
             %histogram of spike times ISI for this unit
             hold off;
             current_plot = subplot(display_rows, display_cols, mini_col_count + display_cols * floor(mini_col_count/display_cols) ,'replace');
-            fprintf('making hist for noise %d at plot point %d\n', n, mini_col_count + display_cols * floor(mini_col_count/display_cols));
+            %fprintf('making hist for noise %d at plot point %d\n', n, mini_col_count + display_cols * floor(mini_col_count/display_cols));
             hold on;
 
              s = get(gca, 'Position');
@@ -1424,7 +1424,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
              current_plot = subplot(display_rows, display_cols, (mini_col_count + display_cols * floor(mini_col_count/display_cols)) + display_cols ,'replace');
              hold on;
 
-             fprintf('making hist for noise %d at plot point %d\n', n, (mini_col_count + display_cols * floor(mini_col_count/display_cols)) + display_cols);
+             %fprintf('making hist for noise %d at plot point %d\n', n, (mini_col_count + display_cols * floor(mini_col_count/display_cols)) + display_cols);
 
              s = get(gca, 'Position');
              set(gca, 'Position', [s(1), s(2), s(3)*unit_hist_width_scalar, s(4)*unit_hist_height_scalar ])
@@ -1480,7 +1480,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
              %histogram of spike times ISI for this unit
              hold off;
              current_plot = subplot(display_rows, display_cols,  mini_col_count + display_cols * floor((mini_col_count-1)/display_cols) ,'replace');
-             fprintf('making hist for unit %d at plot point %d\n', u,  mini_col_count + display_cols * floor((mini_col_count-1)/display_cols));
+             %fprintf('making hist for unit %d at plot point %d\n', u,  mini_col_count + display_cols * floor((mini_col_count-1)/display_cols));
              hold on;
 
              s = get(gca, 'Position');
@@ -1507,7 +1507,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
              current_plot = subplot(display_rows, display_cols, (mini_col_count + display_cols * floor((mini_col_count-1)/display_cols)) + display_cols ,'replace');
              hold on;
 
-             fprintf('making hist for unit %d at plot point %d\n', u, (mini_col_count + display_cols * floor((mini_col_count-1)/display_cols)) + display_cols);
+             %fprintf('making hist for unit %d at plot point %d\n', u, (mini_col_count + display_cols * floor((mini_col_count-1)/display_cols)) + display_cols);
 
              s = get(gca, 'Position');
              set(gca, 'Position', [s(1), s(2),s(3)*unit_hist_width_scalar, s(4)*unit_hist_height_scalar ])
