@@ -267,8 +267,7 @@ function plotChannelSpikes(varargin)
             subplot_cols_per_display_col = 1;
             
             figure(2); % declare the extra ISI plot
-            set(gcf,'visible','off');
-
+            
         %otherwise they can all fit    
         else
             
