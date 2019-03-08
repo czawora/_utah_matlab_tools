@@ -65,10 +65,6 @@ function variance_and_lineNoise_exclusion(varargin)
        error('0 filtered channel mat files are present in split dir\n'); 
     end
     
-    if length(channel_fnames) ~= sum(~[split_files.isdir])
-        error('length(channel_fnames) ~= sum(~[split_files.isdir]) : there seem to unprocessed files left in the split_dir');
-    end
-    
     channel_fnames = sort(channel_fnames);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,11 +120,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         chan_names_by_refset{iRef} = strcat(referencing_info{iRef, 3} , cellfun(@(n) sprintf(digit_replace_string, n), num2cell(eval(referencing_info{iRef, 4})), 'UniformOutput', 0));
     
-        %remove from chan_names_by_refset those channels which were
-        %specified by a row in the reference_info but are actually not
-        %present in the channels loaded from the previous step
-        chan_names_by_refset_isPresent = cellfun(@(refset_chan) any(cellfun(@(loaded_chan) isequal(loaded_chan, refset_chan), chan_names)), chan_names_by_refset{iRef});
-        chan_names_by_refset{iRef} = chan_names_by_refset{iRef}(chan_names_by_refset_isPresent);
+        chan_names_by_refset_isPresent = cellfun(@(refset_chan) cellfun(@(loaded_chan) isequal(loaded_chan, refset_chan), chan_names), chan_names_by_refset{iRef});
     end
     
     
@@ -212,7 +204,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         mvar_ref_Z_last = [mvar_ref_Z_last current_mvar_ref_Z_last];
         mamp_ref_Z_last = [mamp_ref_Z_last current_mamp_ref_Z_last];
-        line_rel_amp = [line_rel_amp; current_line_rel_amp];
+        line_rel_amp = [line_rel_amp current_line_rel_amp];
     
     end
                                             
