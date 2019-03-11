@@ -1,6 +1,6 @@
 function construct_spikeInfoMS(varargin)
 
-% echo construct_spikeInfoMS on;
+echo construct_spikeInfoMS on;
  %NIH034_151001_1317_utah2_u
 % construct_spikeInfoMS_edits('saveRoot','/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/outputs', 'nev_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.nev', 'elementInfo_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2_elementInfo.txt', 'nsx_physio_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.ns6', 'bp_fname_suffix', 'mda_chan', 'subj_str', 'NIH034', 'time_str', '151001_1317', 'nsp_str', 'utah2', 'sessRoot', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/splits');
 
@@ -190,7 +190,6 @@ for i = 1:num_channels
     isol_pair_metrics_struct = readjson(isol_pair_metrics_pathf);
     data_cmat{i, isol_pair_metrics_col} = isol_pair_metrics_struct.cluster_pairs;
     
-    %%%%%%%%%%%%%%%%%%%%%%
     %plot the channel fig
     channel_dname_split = strsplit(channel_dname, '_');
     channel_num = channel_dname_split{end};
@@ -199,7 +198,10 @@ for i = 1:num_channels
     plotChannelSpikes('session_name', sess, 'channel_num', channel_num, 'clip_features', clip_features_fpath, ...
                       'clips', clips_pathf, 'firings', firings_pathf, 'isol_metrics', isol_metrics_pathf, 'isol_pair_metrics', isol_pair_metrics_pathf, ...
                       'metrics', metrics_pathf, 'mda', bp_pathf, 'saveDir', sortfigs_saveRoot);
-    %%%%%%%%%%%%%%%%%%%%%%
+        
+
+
+        
     
     %record some details
     num_spikes = num_spikes + size(data_cmat{i, firings_col}, 2);
