@@ -1272,11 +1272,7 @@ function plotChannelSpikes(varargin)
                                 if spr + avg_secs <= length(spk_rate)
                                     spk_rate(spr) = sum(spk_rate(spr:spr + avg_secs))/avg_secs;
                                 else
-                                    lower_idx = spr - avg_secs + (length(spk_rate) - spr);
-
-                                    %fprintf('unit %d: spr - avg_secs + (length(spk_rate) - spr), %d - %d + (%d - %d) = %d\n',u, spr, avg_secs, length(spk_rate), spr, lower_idx); 
-
-                                    spk_rate(spr) = sum(spk_rate(spr:length(spk_rate)))/avg_secs;
+                                    spk_rate(spr) = NaN;
                                 end
                             end
 
