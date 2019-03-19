@@ -93,9 +93,11 @@ for iRefset = 1:num_refsets
        if contains(used_chan_dir_fnames{iFile}, used_chans_fname_string)
           
            fprintf('choosing: %s\n', used_chan_dir_fnames{iFile});
-           used_chan_fpath = [sessRoot '/../' used_chan_dir_fnames{iFile}]
+           used_chan_fpath = [sessRoot '/../' used_chan_dir_fnames{iFile}];
+           fprintf('%s\n', used_chan_fpath);
            
-           used_chan_fid = fopen(used_chan_fpath)
+           used_chan_fid = fopen(used_chan_fpath);
+           fprintf('%d\n', used_chan_fid);
            current_used_chan = textscan(used_chan_fid,'%s\n');
            current_used_chan = current_used_chan{1};
            fclose(used_chan_fid);
