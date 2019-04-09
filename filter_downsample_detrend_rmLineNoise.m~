@@ -44,7 +44,7 @@ function filter_downsample_detrend_rmLineNoise(varargin)
     if isempty(channelInfo.channel_data)
        
         error_fid = fopen(error_save_fpath, 'w');
-        fprintf(error_fid, 'channel_data was empty when opened\n');
+        fprintf(error_fid, );
         fclose(error_fid);
         
     end

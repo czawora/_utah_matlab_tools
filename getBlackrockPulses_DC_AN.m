@@ -1,6 +1,5 @@
 function pulses = getBlackrockPulses_DC_AN(varargin)
 
-    echo getBlackrockPulses_DC_AN on;
     %output struct
     pulses = struct;
         

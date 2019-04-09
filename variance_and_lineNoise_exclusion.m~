@@ -156,12 +156,12 @@ function variance_and_lineNoise_exclusion(varargin)
 
     for iRef = 1:num_reference_groups
         
-        current_reference_num = reference_groups(iRef);
+        current_reference_num = reference_groups(num_reference_groups);
         current_processed = processed( chan_inds_by_refset{iRef} , :);
         current_chan_inds = 1:size(current_processed, 1);
         current_chan_names = chan_names( chan_inds_by_refset{iRef} );
         
-        refset_savedir = [save_dir sprintf('microDev%d', current_reference_num) '/'];
+        refset_savedir = [save_dir sprintf('refset%d', current_reference_num) '/'];
         
         if ~exist(refset_savedir, 'dir')
            mkdir(refset_savedir); 
@@ -304,8 +304,6 @@ function variance_and_lineNoise_exclusion(varargin)
           '     createdDate          - a string indicating when this mat file was created' newline ...
           '     chanIDperNSP         - a ( #NSPs used x 1 ) cell array. Each enty is a table corresponding to the channel data in lfp' newline ...
           '     lfp                  - a ( #NSPs used x 1 ) cell array. Each cell entry is #channels x #time points matrix (int16). Time point dimension might be slightly different prior to NSP alignment' newline ...
-          '     glob_sig_all         - 1-d cell array containing a global mean using all channels from a device. Index this array using MicroDevNum from the jacksheet' newline ...
-          '     glob_sig_good        - 1-d cell array containing a global mean using only channels from a device that pass an amplitude and variance quality filter (see variance.csv). Index this array using MicroDevNum from the jacksheet' newline ... 
           '     rerefType            - a string indicating either "lfp_noreref" or "lfp_processed"' newline ...
           '     gain_bin2uV          - multiplicative factor to convert lfp_noreref to uV' newline ...
           '     samplingFreq         - samlple frequency of the data. typically 1000 Hz' newline ...
@@ -325,8 +323,7 @@ function variance_and_lineNoise_exclusion(varargin)
     lfpStruct.createdDate = createdDate;
     lfpStruct.chanIDperNSP = chanIDperNSP;
     lfpStruct.lfp = lfp;
-    lfpStruct.glob_sig_all = glob_sig_all;
-    lfpStruct.glob_sig_good = glob_sig_good;
+    lfpStr
     lfpStruct.rerefType = rerefType;
     lfpStruct.gain_bin2uV = gain_bin2uV;
     lfpStruct.samplingFreq = samplingFreq;
