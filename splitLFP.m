@@ -14,6 +14,8 @@ function splitLFP(varargin)
     p.addParameter('nsp_suffix', '', @ischar);
     p.addParameter('save_dir', '', @ischar);
     
+    p.addParameter('debug', '0', @ischar);
+    
     parse(p, varargin{:});
 
     disp(p.Results);
@@ -22,6 +24,8 @@ function splitLFP(varargin)
     jacksheet_fpath = p.Results.jacksheet_fpath;
     nsp_suffix = p.Results.nsp_suffix;
     save_dir = p.Results.save_dir;
+    
+    debug = eval(p.Results.debug);
 
     if ~exist(nsx_fpath, 'file')
         error('%s is not a valid filepath\n', nsx_fpath);
@@ -42,7 +46,7 @@ function splitLFP(varargin)
     save([save_dir '/nsx_postProc.mat'], 'nsx_postProc');
     
     % if there is a < 5 min session, don't bother
-    if sum(nsx.MetaTags.DataDurationSec)/60 < 5
+    if ~debug && sum(nsx.MetaTags.DataDurationSec)/60 < 5
        
         ignore_fid = fopen([save_dir '/_ignore_me.txt'], 'w');   
         fprintf(ignore_fid, '%s', 'session duration less than 5 min');
@@ -99,7 +103,8 @@ function splitLFP(varargin)
         channel_data = nsx.Data(nsp_chan_index, :);
 
         save( [ split_dir '/' sprintf('ch_%03d', iChan) '.mat'] , '-v7.3', 'channel_data', 'channel_name', 'samplingFreq');
-
+        pause(2);
+        
     end
     
 

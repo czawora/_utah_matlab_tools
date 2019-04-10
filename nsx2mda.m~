@@ -65,24 +65,33 @@ function nsx2mda(varargin)
     %read the jacksheet    
     jacksheet = readtable(jacksheet_fpath);
  
+    chan_names_by_refset = cell(size(elInfo, 1), 1);
+    channel_set = {};    
+    
+    for iRef = 1:size(elInfo, 1)
+               
+        channel_set = [ channel_set strcat(elInfo{iRef, 3} , cellfun(@(n) sprintf('%03d', n), num2cell(eval(elInfo{iRef, 4})), 'UniformOutput', 0)) ];
+        chan_names_by_refset{iRef} = strcat(elInfo{iRef, 3} , cellfun(@(n) sprintf('%03d', n), num2cell(eval(elInfo{iRef, 4})), 'UniformOutput', 0));
+    end
+    
     %create output fname
     
-    nsx_fpath_splits = strsplit(nsx_fpath, '/');
-    nsx_fpath_no_path = nsx_fpath_splits{end};
+    input_fname_splits = strsplit(input_fname, '/');
+    input_fname_no_path = input_fname_splits{end};
     
-    nsx_fpath_no_path_split = strsplit(nsx_fpath_no_path, '.');
-    nsx_fpath_no_path_ext = nsx_fpath_no_path_split{1};
+    input_fname_no_path_split = strsplit(input_fname_no_path, '.');
+    input_fname_no_path_no_ext = input_fname_no_path_split{1};
      
-    ignore_me_fname = [session_dir sprintf('/_ignore_me%d.txt', refset)];
-    %output_chans_csv_fname = [output_dir '/' input_fname_no_path_no_ext '_chans.csv'];
+    ignore_me_fname = [output_dir sprintf('/_ignore_me%d.txt', refset)];
+    output_chans_csv_fname = [output_dir '/' input_fname_no_path_no_ext '_chans.csv'];
     
     
     %read the data
-    nsx = concatOpenNSx(nsx_fpath);
+    nsx = concatOpenNSx(input_fname);
     
     %save this for use in the final step of the pipeline
     nsx_postProc = nsx.postProc;
-    save([session_dir '/nsx_postProc.mat'], 'nsx_postProc');
+    save([output_dir '/nsx_postProc.mat'], 'nsx_postProc');
 
     %check if the file is too short to care about
     if ignoreShortFile

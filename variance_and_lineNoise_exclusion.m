@@ -348,7 +348,7 @@ function variance_and_lineNoise_exclusion(varargin)
     
     save([save_dir sessStr '_processed.mat'],  '-v7.3', 'lfpStruct');
 
-    %rmdir(split_path, 's');                        
+    rmdir(split_path, 's');                        
 
     
 end
