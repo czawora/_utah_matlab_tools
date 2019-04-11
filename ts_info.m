@@ -57,7 +57,7 @@ if isempty(inp_pars.Results.bins)
     elseif strncmpi(inp_pars.Results.scale,'ztrans',6)
         lb=-5;ub=5;
     else
-        lb=min(X(:)); ub=max(X(:));
+        lb=nanmin(X(:)); ub=nanmax(X(:));
     end
     
     bins=[lb+(ub-lb)/nbins/2:(ub-lb)/nbins:ub-(ub-lb)/nbins/2];
