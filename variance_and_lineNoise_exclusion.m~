@@ -59,41 +59,6 @@ function variance_and_lineNoise_exclusion(varargin)
     channel_fnames = sort(channel_fnames);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %read in the channel data
-    
-    temp_struct = load([split_path '/' channel_fnames{1}]);
-    
-    num_timepoints = length(temp_struct.noreref);
-    
-    noreref = zeros( length(channel_fnames), num_timepoints);
-    processed = zeros( length(channel_fnames), num_timepoints);
-    
-    chan_names = cell(1, length(channel_fnames));
-    chan_inds = zeros(1, length(channel_fnames));
-    
-    loaded_samplingFreqs = zeros(1, length(channel_fnames));
-    
-    for iFile = 1:length(channel_fnames)
-        
-        temp_struct = load([split_path '/' channel_fnames{iFile}]);
-        
-        fprintf('%s\n', [split_path '/' channel_fnames{iFile}]);
-        noreref(iFile, :) = temp_struct.noreref;
-        processed(iFile, :) = temp_struct.detrended_noLineNoise;
-        chan_names{iFile} = temp_struct.channel_name;
-        chan_inds(iFile) = iFile;
-        loaded_samplingFreqs(iFile) = temp_struct.samplingFreq;
-        
-        clear('temp_struct');
-    
-    end
-        
-    save_dir = [session_path '/outputs/'];
-    if ~exist(save_dir, 'dir')
-        mkdir(save_dir);
-    end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % read jacksheet
     
     full_jacksheet = readtable(jacksheet_fpath);
@@ -106,6 +71,52 @@ function variance_and_lineNoise_exclusion(varargin)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %read in the channel data
+    
+    temp_struct = load([split_path '/' channel_fnames{1}]);
+    
+    num_timepoints = length(temp_struct.noreref);
+    
+    noreref = zeros( length(channel_fnames), num_timepoints);
+    processed = zeros( length(channel_fnames), num_timepoints);
+        
+    loaded_samplingFreqs = zeros(1, length(channel_fnames));
+    
+    for iFile = 1:length(channel_fnames)
+        
+        temp_struct = load([split_path '/' channel_fnames{iFile}]);
+        
+        temp_channel_name = temp_struct.channel_name;
+        
+        %which row is this channel name in the jacksheet
+        match2jacksheet = cellfun( @(x) isequal(x, temp_channel_name) , original_split_channels);
+        
+        if ~any(match2jacksheet)
+           error('current loaded channel does not match a channel in the jacksheet: %s', channel_fnames{iFile}); 
+        end
+        
+        if sum(match2jacksheet) > 1
+            error('current loaded channel matches more than one channel in the jacksheet: %s, %s', channel_fnames{iFile}, temp_channel_name); 
+        end
+        
+        
+        fprintf('%s\n', [split_path '/' channel_fnames{iFile}]);
+
+        noreref(match2jacksheet, :) = temp_struct.noreref;
+        processed(match2jacksheet, :) = temp_struct.detrended_noLineNoise;
+        loaded_samplingFreqs(match2jacksheet) = temp_struct.samplingFreq;
+        
+        clear('temp_struct');
+    
+    end
+        
+    save_dir = [session_path '/outputs/'];
+    if ~exist(save_dir, 'dir')
+        mkdir(save_dir);
+    end
+     
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %create channel name sets to filter channels into rereferencing groups
     
     %how many referencing groups on this nsp
@@ -113,27 +124,6 @@ function variance_and_lineNoise_exclusion(varargin)
     num_reference_groups = length(reference_groups);
 
  
-    % sort channels into reference sets for processing
-    chan_inds_by_refset = cell(num_reference_groups, 1);
-    
-    for iChan = 1:length(chan_names)
-        
-       current_channel = chan_names{iChan};
-              
-       %match current_channel to row in used_jacksheet
-       current_channel_used_jacksheet_filter = cellfun(@(x) isequal(x, current_channel), original_split_channels);
-       
-       if ~any(current_channel_used_jacksheet_filter)
-          error('a loaded channel is not present in the used_jacksheet. should never happen'); 
-       end
-       
-       current_channel_devNum = used_jacksheet{current_channel_used_jacksheet_filter, 'MicroDevNum'};
-       current_channel_reference_group_idx = find(reference_groups == current_channel_devNum);
-       
-       chan_inds_by_refset{current_channel_reference_group_idx} = [ chan_inds_by_refset{current_channel_reference_group_idx} chan_inds(iChan)];
-       
-    end
-     
     % make sure all the loaded channels were downsampled to the same value
     if length(unique(loaded_samplingFreqs)) > 1
         error('more than one downsample rate was used in the loaded channels');
@@ -157,44 +147,62 @@ function variance_and_lineNoise_exclusion(varargin)
     for iRef = 1:num_reference_groups
         
         current_reference_num = reference_groups(iRef);
-        current_processed = processed( chan_inds_by_refset{iRef} , :);
+        
+        current_reference_match = (used_jacksheet{:, 'MicroDevNum'} == current_reference_num);
+        
+        current_processed = processed( current_reference_match , :);
         current_chan_inds = 1:size(current_processed, 1);
-        current_chan_names = chan_names( chan_inds_by_refset{iRef} );
+        current_chan_names = used_jacksheet{current_reference_match, 'ChanName'};
         
         refset_savedir = [save_dir sprintf('microDev%d', current_reference_num) '/'];
         
         if ~exist(refset_savedir, 'dir')
            mkdir(refset_savedir); 
         end
-                
-        [current_bad_chans_new, ...
-         current_bad_chans_old, ...
-         ~, ... %eeg_raw_proc
-         current_glob_sig_all, ...
-         current_glob_sig_good, ...
-         current_mvar_ref_Z_last, ...
-         current_mamp_ref_Z_last, ...
-         current_line_rel_amp, ...
-         ~] = eeg_noise_metrics_CZ([], [], [], [], [], [] , ...
-                                                    'biowulf', '1',...
-                                                    'biowulf_eeg_raw_proc', current_processed',...
-                                                    'biowulf_Fs', samplingFreq ,...
-                                                    'biowulf_chan_inds', current_chan_inds',...
-                                                    'biowulf_chan_names', current_chan_names',...
-                                                    'outputdir', refset_savedir ,...
-                                                    'z_thresh', var_amp_sigma);                                       
+        plotNaN(current_chan_names, current_processed, samplingFreq, refset_savedir);
+        
+        % check if all values are NaN, meaning the entire array is flat the whole session
+        
+        if sum(isnan(current_processed(:))) == (size(current_processed, 1) * size(current_processed, 2))
+        
+            current_bad_chan_names = current_chan_names';
+            current_mvar_ref_Z_last = nan(1, length(current_chan_names));
+            current_mamp_ref_Z_last = nan(1, length(current_chan_names));
+            current_line_rel_amp = nan(1, length(current_chan_names));
+            
+        else
+            
+            [current_bad_chans_new, ...
+             current_bad_chans_old, ...
+             ~, ... %eeg_raw_proc
+             current_glob_sig_all, ...
+             current_glob_sig_good, ...
+             current_mvar_ref_Z_last, ...
+             current_mamp_ref_Z_last, ...
+             current_line_rel_amp, ...
+             ~] = eeg_noise_metrics_CZ([], [], [], [], [], [] , ...
+                                                        'biowulf', '1',...
+                                                        'biowulf_eeg_raw_proc', current_processed',...
+                                                        'biowulf_Fs', samplingFreq ,...
+                                                        'biowulf_chan_inds', current_chan_inds',...
+                                                        'biowulf_chan_names', current_chan_names',...
+                                                        'outputdir', refset_savedir ,...
+                                                        'z_thresh', var_amp_sigma);                                       
 
-        current_bad_chan_names = union(current_bad_chans_new, current_bad_chans_old);
-        if isempty(current_bad_chan_names), current_bad_chan_names = {}; end
-       
+            current_bad_chan_names = union(current_bad_chans_new, current_bad_chans_old);
+            if isempty(current_bad_chan_names), current_bad_chan_names = {}; end
+
+            glob_sig_all{current_reference_num} = int16(current_glob_sig_all);
+            glob_sig_good{current_reference_num} = int16(current_glob_sig_good);
+
+        end
+                     
         bad_chan_names = [ bad_chan_names ; current_bad_chan_names];
-       
-        glob_sig_all{current_reference_num} = int16(current_glob_sig_all);
-        glob_sig_good{current_reference_num} = int16(current_glob_sig_good);
         
         mvar_ref_Z_last = [mvar_ref_Z_last current_mvar_ref_Z_last];
         mamp_ref_Z_last = [mamp_ref_Z_last current_mamp_ref_Z_last];
         line_rel_amp = [line_rel_amp; current_line_rel_amp];
+    
     
     end
                                             
@@ -204,8 +212,8 @@ function variance_and_lineNoise_exclusion(varargin)
     % write variance.csv file
     ndec = 4;
     variance = struct();
-    variance.chanName = chan_names(:);
-    variance.is_good  = double(~ismember(chan_names', bad_chan_names));
+    variance.chanName = used_jacksheet{:, 'ChanName'};
+    variance.is_good  = double(~ismember(used_jacksheet{:, 'ChanName'}, bad_chan_names));
     variance.variance = round(mvar_ref_Z_last(:), ndec, 'decimals');
     variance.amplitude = round(mamp_ref_Z_last(:), ndec, 'decimals');
     variance.line_noise = round(line_rel_amp(:), ndec, 'decimals');
