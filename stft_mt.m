@@ -82,13 +82,13 @@ assert(~(inp_pars.Results.multitapers && ~any(strcmp('window',inp_pars.UsingDefa
 assert(~(any(strcmp('multitapers',inp_pars.UsingDefaults)) && ~any(strcmp('weights',inp_pars.UsingDefaults))),'The ''weights'' option is only valid when using the ''multitapers'' option')
 
 visual=inp_pars.Results.visual;
-if ~nargout || nargout>6
+if (~nargout || nargout>6) && any(strcmp('visual',inp_pars.UsingDefaults))
     visual=1;
 end
 
 %% data and parameters
 X=X(:);
-X(isnan(X))=[];
+% X(isnan(X))=[];
 N = length(X);
 Nsamples=round(T*Fs);
 nfft=ceil((Nsamples+1)/2);
@@ -138,6 +138,7 @@ t_sec(:) = [((1:windows)-1)*(Nsamples-ovrlp_samples),((1:windows)*(Nsamples-ovrl
 % freq x window x taper
 fx = fft(E_windowed.*eeg_windowed);
 fx = fx(1:nfft,:,:)/sqrt(Nsamples); %%% unitary scaling
+fx(isnan(fx))=NaN; %%% this is because complex nan (NaN + NaNi) forces everything after to be complex, so this turns complex nans into real nans
 all_pow = (fx.*conj(fx));%*(dt.^2);
 
 all_pow = [all_pow(1,:,:);2*all_pow(2:nfft,:,:)];
@@ -160,9 +161,9 @@ taper_amp_norm=(1-(taper_ind && no_tapers==1))+(taper_ind && no_tapers==1)/mean(
 taper_pow_norm=(1-(taper_ind && no_tapers==1))+(taper_ind && no_tapers==1)/rms(E(:));
 
 % average over tapers, weighted by eigen values if 'weights' is being used
-TF=mean(bsxfun(@times,all_pow,V_weights),3); % will average only if there is a third dim, i.e tapers.
+TF=nanmean(bsxfun(@times,all_pow,V_weights),3); % will average only if there is a third dim, i.e tapers.
 % average over windows and scale amplitude
-PS=mean(TF,2);
+PS=nanmean(TF,2);
 
 PS = [sqrt(PS(1));sqrt(2*PS(2:end))]/sqrt(Nsamples)*(taper_amp_norm);
 if ~rem(Nsamples,2)% if Nsamples is odd, Nyquist component is not evaluated
