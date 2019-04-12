@@ -527,10 +527,6 @@ if visual
                 combined_col_notallnan_idx = find(combined_col_notallnan);
                 ind = combined_col_notallnan_idx(1);
                 
-                if ind + npoints > size(ds_eeg_avg_reref,1)
-                    npoints = size(ds_eeg_avg_reref,1) - ind -1;
-                end
-                
                 eeg_ts_ref=ds_eeg_avg_reref(ind:ind+npoints,chan_ind)';
                 eeg_ts_raw=ds_eeg_raw_proc(ind:ind+npoints,chan_ind)';
                 T_secs = [ind-1:(ind-1)+(size(eeg_ts_ref,2)-1)] ./ ds_Fs;
