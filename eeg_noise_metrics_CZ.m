@@ -515,7 +515,7 @@ if visual
             combined_chan_num = size(combined_ts_ref_raw, 1);
             
             combined_col_nansum = sum( isnan(combined_ts_ref_raw) , 1);
-            combined_col_notallnan = ~(combined_col_nansum == combined_chan_num);
+            combined_col_notallnan = (combined_col_nansum == 0);
             
             % no timepoints without all nans
             if ~any(combined_col_notallnan)
