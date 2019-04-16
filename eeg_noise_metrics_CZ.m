@@ -629,7 +629,24 @@ if visual
         % set ticks/labels
         %ylim([min(eegspaced_ref(:))-Sig_ref(1) max(eegspaced_ref(:))+Sig_ref(end)])
         %xlim([min(T_secs) max(T_secs)])
-        set(h2_ax,'yaxislocation','right','ytick',temp,'yticklabel',chan_names(chan_ind),'ylim',[min(eegspaced_ref(:))-Sig_ref(1) max(eegspaced_ref(:))+Sig_ref(end)])
+        
+         if all(diff(temp))
+            set(h2_ax,'yaxislocation','right','ytick',temp(~isnan(temp)),'yticklabel',chan_names(chan_ind),'ylim',[min(eegspaced_ref(:))-Sig_raw(1) max(eegspaced_ref(:))+Sig_raw(end)])
+        else
+            % in case there are columns with all zeros add a small shift
+            run_starts = [0; find(diff(temp)~=0)] + 1;
+            run_lengths = [diff(run_starts); numel(temp) - run_starts(end) + 1];
+ 
+            rem_starts=run_starts(run_lengths>1);
+            rem_ends=rem_starts+run_lengths(run_lengths>1);
+            rem_lengths=run_lengths(run_lengths>1) - 1;
+            for k=1:length(rem_starts)
+                temp(rem_starts(k)+1:rem_ends(k)-1)=temp(rem_starts(k)+1:rem_ends(k)-1)+cumsum(ones(1,rem_lengths(k))*mean(diff(temp))/length(temp))';
+            end
+            set(h2_ax,'yaxislocation','right','ytick',temp(~isnan(temp)),'yticklabel',chan_names(chan_ind),'ylim',[min(eegspaced_ref(:))-Sig_raw(1) max(eegspaced_ref(:))+Sig_raw(end)])
+        end
+        
+        %set(h2_ax,'yaxislocation','right','ytick', temp ,'yticklabel',chan_names(chan_ind),'ylim',[min(eegspaced_ref(:))-Sig_ref(1) max(eegspaced_ref(:))+Sig_ref(end)])
         set(h2_ax,'xtick',[0:5:max(T_secs)],'xticklabel',[0:5:max(T_secs)],'Ticklength', [0 0],'xlim',[min(T_secs) max(T_secs)])
         %grid on; box on
         drawnow;
