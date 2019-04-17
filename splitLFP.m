@@ -98,6 +98,7 @@ function splitLFP(varargin)
         
         channel_name = current_channel_jacksheet{ iChan, 'ChanName' }{1};
         
+        
         nsp_chan_index = cellfun(@(x) isequal(channel_name, x), electrodeLabels);
         
         channel_data = nsx.Data(nsp_chan_index, :);
