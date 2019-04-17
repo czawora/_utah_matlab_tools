@@ -231,6 +231,7 @@ function variance_and_lineNoise_exclusion(varargin)
     
     load([session_path '/nsx_postProc.mat']);
     physio_nsx_postProc = nsx_postProc;
+    physio_nsx_postProc = {used_jacksheet{1, 'NSPsuffix'} used_jacksheet{1, 'FileName'} physio_nsx_postProc};
     
     %extract start time from jacksheet
     dateInfo_column = 'FileName';
@@ -274,7 +275,7 @@ function variance_and_lineNoise_exclusion(varargin)
               '     jackTableFull        - complete jacksheetBR table from this session (all channels) with device numbers and new channel names' newline ...
               '     jackTableUsed        - just the jacksheet for the channels incorporated into this lfpStruct (combined across NSPs). this table can be used to go back and forth between original and new channel names' newline ...
               '     startTime_datenum    - the start time of session as output from datenum function (note that these values are taken from the timestamp in the nsx filename, not the incorrectly offset time values in the original nsx file)'  newline ...
-              '     physio_nsx_postProc  - contains info on how the original nsx file was modified using concatOpenNSx' ];
+              '     physio_nsx_postProc  - (a #nsp x 3) cell with "nspSuffix" "nsxFilename" and struct with info on how the original nsx file was modified using concatOpenNSx' ];
           
 
     lfp = {int16(noreref)};  
@@ -326,7 +327,7 @@ function variance_and_lineNoise_exclusion(varargin)
           '     jackTableFull        - complete jacksheetBR table from this session (all channels) with device numbers and new channel names' newline ...
           '     jackTableUsed        - just the jacksheet for the channels incorporated into this lfpStruct (combined across NSPs). this table can be used to go back and forth between original and new channel names' newline ...
           '     startTime_datenum    - the start time of session as output from datenum function (note that these values are taken from the timestamp in the nsx filename, not the incorrectly offset time values in the original nsx file)'  newline ...
-          '     physio_nsx_postProc  - contains info on how the original nsx file was modified using concatOpenNSx' ];
+          '     physio_nsx_postProc  - (a #nsp x 3) cell with "nspSuffix" "nsxFilename" and struct with info on how the original nsx file was modified using concatOpenNSx' ];
 
     lfpStruct = struct;
     lfpStruct.readme = readme;          
