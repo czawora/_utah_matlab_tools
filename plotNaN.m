@@ -4,10 +4,11 @@ function plotNaN(current_chan_names, current_processed, samplingFreq, refset_sav
 
     figure();
     set(gcf,'color','w');
-    set(gcf,'visible','off');
     
-    output_fpath = [refset_savedir 'nan.png'];
-    
+    if ~isempty(refset_savedir)
+        set(gcf,'visible','off');
+    end
+        
     nan_vec = isnan(current_processed(:));
     not_nan_vec = ~isnan(current_processed(:));
     
@@ -34,7 +35,9 @@ function plotNaN(current_chan_names, current_processed, samplingFreq, refset_sav
     tightfig();
     set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
 
-    print(gcf,output_fpath,'-dpng','-r100');
-
+    if ~isempty(refset_savedir)
+        output_fpath = [refset_savedir 'nan.png'];
+        print(gcf,output_fpath,'-dpng','-r100');
+    end
 
 end

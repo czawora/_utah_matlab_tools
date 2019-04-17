@@ -133,17 +133,17 @@ function variance_and_lineNoise_exclusion(varargin)
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %iteratively calculate variance and amplitude of signal to exclude
-    %outliers from global average
-        
-    bad_chan_names = {};
-    
-    mvar_ref_Z_last = [];
-    mamp_ref_Z_last = [];
-    line_rel_amp = [];
+    %outliers from global average     
     
     glob_sig_all = cell(1, max(reference_groups));
     glob_sig_good = cell(1, max(reference_groups));
-
+    
+    variance_chanName = used_jacksheet{:, 'ChanName'};
+    variance_is_good = ones(1, length(used_jacksheet{:, 'ChanName'}));
+    variance_variance = nan(1, length(used_jacksheet{:, 'ChanName'}));
+    variance_amplitude = nan(1, length(used_jacksheet{:, 'ChanName'}));
+    variance_line_noise = nan(1, length(used_jacksheet{:, 'ChanName'}));
+   
     for iRef = 1:num_reference_groups
         
         current_reference_num = reference_groups(iRef);
@@ -159,18 +159,36 @@ function variance_and_lineNoise_exclusion(varargin)
         if ~exist(refset_savedir, 'dir')
            mkdir(refset_savedir); 
         end
+        
         plotNaN(current_chan_names, current_processed, samplingFreq, refset_savedir);
         
         % check if all values are NaN, meaning the entire array is flat the whole session
-        
         if sum(isnan(current_processed(:))) == (size(current_processed, 1) * size(current_processed, 2))
         
             current_bad_chan_names = current_chan_names';
-            current_mvar_ref_Z_last = nan(1, length(current_chan_names));
-            current_mamp_ref_Z_last = nan(1, length(current_chan_names));
-            current_line_rel_amp = nan(1, length(current_chan_names));
+            
+            % mark these channels as bad in variance struct
+            variance_is_good(cellfun(@(x) any(cellfun(@(y) isequal(x, y), current_bad_chan_names)) , variance_chanName)) = 0;    
             
         else
+            
+            % remove any channels that are totally NaN
+            
+            current_processed_nanChan = ( sum(isnan(current_processed), 2) == size(current_processed, 2) );
+            excluded_chan_names = current_chan_names( current_processed_nanChan );
+            
+            if ~isempty(excluded_chan_names)
+                
+                % mark these channels as bad in variance struct
+                variance_is_good(cellfun(@(x) any(cellfun(@(y) isequal(x, y), excluded_chan_names)) , variance_chanName)) = 0;    
+
+            end
+            
+            % quality check only non NaN channels
+            
+            current_processed = current_processed(~current_processed_nanChan, :);
+            current_chan_inds = current_chan_inds(~current_processed_nanChan);
+            current_chan_names = current_chan_names(~current_processed_nanChan);
             
             [current_bad_chans_new, ...
              current_bad_chans_old, ...
@@ -189,20 +207,24 @@ function variance_and_lineNoise_exclusion(varargin)
                                                         'outputdir', refset_savedir ,...
                                                         'z_thresh', var_amp_sigma);                                       
 
+            % add amp and var stats to variance struct
+            variance_chanName_filt = cellfun(@(x) any(cellfun(@(y) isequal(x, y), current_chan_names)) , variance_chanName);
+            
+            variance_variance(variance_chanName_filt) = current_mvar_ref_Z_last(:);
+            variance_amplitude(variance_chanName_filt) = current_mamp_ref_Z_last(:);
+            variance_line_noise(variance_chanName_filt) = current_line_rel_amp(:);
+   
+            % mark these channels as bad in variance struct                                        
             current_bad_chan_names = union(current_bad_chans_new, current_bad_chans_old);
             if isempty(current_bad_chan_names), current_bad_chan_names = {}; end
 
+            variance_is_good(cellfun(@(x) any(cellfun(@(y) isequal(x, y), current_bad_chan_names)) , variance_chanName)) = 0;    
+
+            
             glob_sig_all{current_reference_num} = int16(current_glob_sig_all);
             glob_sig_good{current_reference_num} = int16(current_glob_sig_good);
-
-        end
-                     
-        bad_chan_names = [ bad_chan_names ; current_bad_chan_names];
-        
-        mvar_ref_Z_last = [mvar_ref_Z_last current_mvar_ref_Z_last];
-        mamp_ref_Z_last = [mamp_ref_Z_last current_mamp_ref_Z_last];
-        line_rel_amp = [line_rel_amp; current_line_rel_amp];
-    
+            
+        end                     
     
     end
                                             
@@ -212,11 +234,12 @@ function variance_and_lineNoise_exclusion(varargin)
     % write variance.csv file
     ndec = 4;
     variance = struct();
-    variance.chanName = used_jacksheet{:, 'ChanName'};
-    variance.is_good  = double(~ismember(used_jacksheet{:, 'ChanName'}, bad_chan_names));
-    variance.variance = round(mvar_ref_Z_last(:), ndec, 'decimals');
-    variance.amplitude = round(mamp_ref_Z_last(:), ndec, 'decimals');
-    variance.line_noise = round(line_rel_amp(:), ndec, 'decimals');
+    variance.chanName = variance_chanName;
+    variance.is_good = variance_is_good';
+    variance.variance = round( variance_variance' , ndec, 'decimals');
+    variance.amplitude = round( variance_amplitude' , ndec, 'decimals');
+    variance.line_noise = round( variance_line_noise' , ndec, 'decimals');
+    
     var_table = struct2table(variance);
     filename = [save_dir 'variance.csv'];
     writetable(var_table,filename);
