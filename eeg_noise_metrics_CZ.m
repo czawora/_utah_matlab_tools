@@ -520,7 +520,8 @@ if visual
             % no timepoints without all nans
             if ~any(combined_col_notallnan)
                 
-                error('cannot find a segment of downsampled data without all NaNs to plot compare figs');
+                fprintf('cannot find a segment of downsampled data without all NaNs to plot compare figs\n');
+                return;
             else
                 
                 %get the first timepoint without all NaNs
