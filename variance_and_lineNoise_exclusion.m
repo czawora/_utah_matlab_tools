@@ -187,7 +187,7 @@ function variance_and_lineNoise_exclusion(varargin)
             % quality check only non NaN channels
             
             current_processed = current_processed(~current_processed_nanChan, :);
-            current_chan_inds = current_chan_inds(~current_processed_nanChan);
+            current_chan_inds = 1:size(current_processed, 1);
             current_chan_names = current_chan_names(~current_processed_nanChan);
             
             [current_bad_chans_new, ...
