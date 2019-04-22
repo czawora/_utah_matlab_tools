@@ -55,7 +55,7 @@ function nsx2mda(varargin)
     jacksheet = readtable(jacksheet_fpath);
     
     % jacksheet for this refset
-    used_jacksheet = jacksheet( jacksheet{:,'MicroDevNum'} == refset && jacksheet{:,'RangeMilliV'} > min_range_cutoff_millivolt , : );
+    used_jacksheet = jacksheet( (jacksheet{:,'MicroDevNum'} == refset) && (jacksheet{:,'RangeMilliV'} > min_range_cutoff_millivolt) , : );
     
     % check if all the channels failed to pass the range filter
     if isempty(used_jacksheet)
