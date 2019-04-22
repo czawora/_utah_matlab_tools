@@ -10,7 +10,7 @@ function nsx2mda(varargin)
     p.addParameter('jacksheet_fpath', '', @ischar);
     p.addParameter('refset', '', @ischar);
     p.addParameter('session_dir', '', @ischar);
-    p.addParameter('min_range_cutoff_microvolt', '10', @ischar);
+    p.addParameter('min_range_cutoff_ungained', '10', @ischar);
     p.addParameter('min_duration_data_min', '5', @ischar);
     
     p.addParameter('ignoreShortFile', '1', @ischar);
