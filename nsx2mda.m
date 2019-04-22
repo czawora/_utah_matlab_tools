@@ -101,14 +101,31 @@ function nsx2mda(varargin)
         
         electrodeLabels{iElec} = electrodeLabels{iElec}(1:endIdx);
     end
+       
+    % select channels from data based on filtered jacksheet
+    % make sure data channels are ordered as they appear in the jacksheet
+    reorder_idx = [];
     
-    % which electrodeLabels are in the refset
-    refset_nsx_chan_filt = cellfun( @(x) any(cellfun( @(y) isequal(x, y) , used_jacksheet{:, 'ChanName'})), electrodeLabels);
+    for iRow_jack = 1:size(used_jacksheet, 1)
+        
+        % current chan name in jacksheet
+        chan_name_jack = used_jacksheet{iRow_jack, 'ChanName'}{1};
+        
+        % find this channel in electrodeLabels
+        for iDataChan = 1:length(electrodeLabels)
+            
+            % does this index indicate the channel I am looking for
+            if isequal(chan_name_jack, electrodeLabels{iDataChan})
+                
+                reorder_idx = [ reorder_idx iDataChan ];
+            end
+        end
+    end
    
     output_mda_fpath = [session_dir '/' sprintf('refset%d.mda', refset)];
     output_used_jacksheet_fpath = [session_dir '/' sprintf('jacksheet_refset%d.csv', refset)];
     
-    writemda(nsx.Data(refset_nsx_chan_filt, :), output_mda_fpath, 'int16');
+    writemda(nsx.Data(reorder_idx, :), output_mda_fpath, 'int16');
     writetable(used_jacksheet, output_used_jacksheet_fpath);
 
 end

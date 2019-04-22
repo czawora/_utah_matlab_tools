@@ -103,60 +103,36 @@ function nsx2mda(varargin)
     end
     
     % which electrodeLabels are in the refset
-    refset_nsx_chan_filt = cellfun( @(x) any(cellfun( @(y) isequal(x, y) , refset_jacksheet{:, 'ChanName'})), electrodeLabels);
-   
+    refset_nsx_chan_filt = cellfun( @(x) any(cellfun( @(y) isequal(x, y) , used_jacksheet{:, 'ChanName'})), electrodeLabels);
+    refset_nsx_chan_idx = find(refset_nsx_chan_filt);
+    %nsx.Data(refset_nsx_chan_filt, :);
     
-    % if no channel pass, write and _ignore_me, else write the data out, reference set
-    if isempty(nsx_channelNames_match)
-       
-        ignore_me_fid = fopen(ignore_me_fname, 'w');
-        fprintf(ignore_me_fid, 'all channels unselected or have data range < 10');
-        fclose(ignore_me_fid);
-    else
+    
+    % make sure data channels are ordered as they appear in the jacksheet
+    
+    reorder_idx = [];
+    
+    for iRow_jack = 1:size(used_jacksheet, 1)
         
-        for iRef = 1:size(elInfo, 1)
-
-            output_chans_tmp_fname = [output_dir '/' input_fname_no_path_no_ext sprintf('_refset%d_used_chans.tmp%d', iRef, refset)];
-            output_chans_txt_fname = [output_dir '/' input_fname_no_path_no_ext sprintf('_refset%d_used_chans.txt', iRef)];
+        % current chan name in jacksheet
+        chan_name_jack = used_jacksheet{iRow_jack, 'ChanName'}{1};
+        
+        % find this channel in refset_nsx_chan_idx
+        for iDataChan = 1:length(electrodeLabels)
             
-            %find names in nsx_channelNames_match that are in chan_names_by_refset{iRef}
-            current_refset_chan_names = chan_names_by_refset{iRef};
-            current_refset_idx = [];
-
-            output_chans_tmp_fid = fopen(output_chans_tmp_fname, 'w');        
-
-            for iRefChan = 1:length(current_refset_chan_names)
-
-                current_refset_chan = current_refset_chan_names{iRefChan};
-                current_refset_chan_binar = cellfun(@(x) isequal(x, current_refset_chan), nsx_channelNames_match);
-
-                if any(current_refset_chan_binar)
-
-                    fprintf(output_chans_tmp_fid, sprintf('%s\n', current_refset_chan));
-                    current_refset_idx(length(current_refset_idx) + 1) = find(current_refset_chan_binar);
-                end
-
+            % does this index indicate the channel I am looking for
+            if isequal(chan_name_jack, electrodeLabels{iDataChan})
+                
+                reorder_idx = 
             end
-
-            fclose(output_chans_tmp_fid);
-            movefile(output_chans_tmp_fname, output_chans_txt_fname);
-            
-
-            if iRef == refset
-            
-                output_mda_fname = [output_dir '/' input_fname_no_path_no_ext sprintf('.refset%d.mda', iRef)];
-
-                writemda(nsx.Data(current_refset_idx, :), output_mda_fname, 'int16');
-                
-                %calcWindowStats(nsx.Data(current_refset_idx, :), nsx.MetaTags.SamplingFreq, [output_dir '/raw_'  sprintf('quantiles.refset%d.mat', iRef)], current_refset_chan_names);
-                
-                sampling_freq = nsx.MetaTags.SamplingFreq;
-                save([output_dir '/samplingFreq.mat'], 'sampling_freq');
-            
-            end  
-            
         end
     end
     
    
+    output_mda_fpath = [session_dir '/' sprintf('refset%d.mda', refset)];
+    output_used_jacksheet_fpath = [session_dir '/' sprintf('jacksheet_refset%d.csv', refset)];
+    
+    writemda(nsx.Data(refset_nsx_chan_filt, :), output_mda_fpath, 'int16');
+    writetable(used_jacksheet, output_used_jacksheet_fpath);
+
 end

@@ -1,4 +1,4 @@
-function globalReref_allchan(input_fpath, output_fpath)
+function globalReref_allchan(input_fpath, output_fpath, refset)
 
     fprintf('starting\n');
 
