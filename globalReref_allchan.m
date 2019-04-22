@@ -1,17 +1,12 @@
-function globalReref_allchan(input_fpath, output_fpath, refset, used_chan_fpath)
+function globalReref_allchan(input_fpath, output_fpath, refset)
 
-    echo globalReref_allchan on;
     fprintf('starting\n');
 
     if ~exist(input_fpath, 'file')
        error('not a valid path, %s', input_fpath); 
     end
-    
-    if ~exist(used_chan_fpath, 'file')
-       error('not a valid path, %s', used_chan_fpath); 
-    end
-    
-    [input_path, ~, ~] = fileparts(input_fpath);
+  
+    [session_dir, ~, ~] = fileparts(input_fpath);
     
     bandpass_quantile_output_fpath = [input_path '/bandpass_'  sprintf('quantiles.refset%s.mat', refset)];
     reref_quantile_output_fpath = [input_path '/reref_'  sprintf('quantiles.refset%s.mat', refset)];

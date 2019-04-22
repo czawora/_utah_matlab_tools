@@ -162,9 +162,13 @@ function variance_and_lineNoise_exclusion(varargin)
         
         plotNaN(current_chan_names, current_processed, samplingFreq, refset_savedir);
         
-        % check if all values are NaN, meaning the entire array is flat the whole session
-        if sum(isnan(current_processed(:))) == (size(current_processed, 1) * size(current_processed, 2))
+        perc_nan = sum(isnan(current_processed(:))) / ((size(current_processed, 1) * size(current_processed, 2)));
         
+        % check if all values are NaN, meaning the entire array is flat the whole session (coded as > 99% NaN)
+        if perc_nan >= 0.99
+        
+            fprintf('%0.4f percent NaN ( > 99 percent ), skipping microDev %d\n', perc_nan * 100, current_reference_num);
+            
             current_bad_chan_names = current_chan_names';
             
             % mark these channels as bad in variance struct
