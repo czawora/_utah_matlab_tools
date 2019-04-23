@@ -6,10 +6,10 @@ function nsx2mda(varargin)
     fprintf('* %s\n', mfilename);
 
     p = inputParser;
-    p.addParameter('nsx_fpath', '', @ischar);
-    p.addParameter('jacksheet_fpath', '', @ischar);
-    p.addParameter('refset', '', @ischar);
-    p.addParameter('session_dir', '', @ischar);
+    p.addParameter('nsx_fpath', '/Volumes/72A/UTAH_A/NIH036/data_raw/151211_1041/151211_1041_utah1.ns6', @ischar);
+    p.addParameter('jacksheet_fpath', '/Volumes/72A/UTAH_A/NIH036/data_raw/151211_1041/jacksheetBR_complete.csv', @ischar);
+    p.addParameter('refset', '1', @ischar);
+    p.addParameter('session_dir', '/Users/zaworaca/Desktop/Desktop/debug/ms_debug/NIH036_151211_1041', @ischar);
     p.addParameter('min_range_cutoff_ungained', '10', @ischar);
     p.addParameter('min_duration_data_min', '5', @ischar);
     

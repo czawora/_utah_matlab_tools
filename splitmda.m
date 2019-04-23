@@ -48,7 +48,7 @@ function splitmda(varargin)
         channel_output_dir = [output_dir '/' input_fname_no_path_no_ext sprintf('_%d', iChan)];
         mkdir(channel_output_dir);
         
-        channel_output_fname = [channel_output_dir '/' input_fname_no_path_no_ext sprintf('_%d', iChan) sprintf('.refset%d_mda_chan', refset)];
+        channel_output_fname = [channel_output_dir '/' input_fname_no_path_no_ext sprintf('_%d', iChan) '.mda_chan'];
         writemda(mda(iChan,:), channel_output_fname);
     end
     
