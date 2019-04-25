@@ -22,11 +22,11 @@ function globalReref_allchan(input_fpath, output_fpath)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % calculate some variance stats
     
-    input_fpath_splits = strsplit(input_fpath, '/');
-    input_path = strjoin(input_fpath_splits(1:(end-1)), '/');
-    input_fname = input_fpath_splits{end};
+    output_fpath_splits = strsplit(output_fpath, '/');
+    output_path = strjoin(output_fpath_splits(1:(end-1)), '/');
+    output_fname = output_fpath_splits{end};
     
-    output_var_stats_fpath = [ input_path '/' input_fname '_var_stats.mat'];
+    output_var_stats_fpath = [ output_path '/' output_fname '_var_stats.mat'];
     
     chan_var = var(input_data, 0, 2);
     chan_rms = rms(input_data, 2);
