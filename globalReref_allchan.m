@@ -22,8 +22,8 @@ function globalReref_allchan(input_fpath, output_fpath)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % calculate some variance stats
     
-    [input_path , fname, ~] = fileparts(input_fpath);
-    output_var_stats_fpath = [ input_path '/' fname '_var_stats.mat'];
+    [input_path , fname, ext] = fileparts(input_fpath);
+    output_var_stats_fpath = [ input_path '/' fname '_' ext '_var_stats.mat'];
     
     chan_var = var(input_data, 0, 2);
     chan_rms = rms(input_data, 2);
