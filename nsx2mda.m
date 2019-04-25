@@ -129,6 +129,4 @@ function nsx2mda(varargin)
     writemda(nsx.Data(reorder_idx, :), output_mda_fpath, 'int16');
     writetable(used_jacksheet, output_used_jacksheet_fpath);
     
-    calcWindowStats(nsx.Data(reorder_idx, :), used_jacksheet{1, 'SampFreq'}, output_var_stats_fpath, used_jacksheet);
-
 end

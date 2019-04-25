@@ -1,9 +1,12 @@
-function calcWindowStats(data_mat, sampling_freq, output_fpath, jacksheet)
+function calcVarStats(data_mat, output_fpath, jacksheet)
 
     if size(data_mat, 1) ~= size(jacksheet, 1)
-        error('number of  must match number of channels in data_mat (rows)');
+        error('number of jacksheet rows must match number of channels in data_mat (rows)');
     end
-
+    
+    chan_var = var(data_mat, 0, 2);
+    chan_rms = rms(data_mat, 2);
+    
     % calculate the quantiles of the raw data  
     
     samples_per_ms = sampling_freq / 1000;
@@ -41,6 +44,12 @@ function calcWindowStats(data_mat, sampling_freq, output_fpath, jacksheet)
 
     end
     
-    save(output_fpath, 'std_mats', 'rms_mats', 'chan_names', 'window_center_sec');
+    var_stats = struct;
+    var_stats.std_mats = std_mats;
+    var_stats.rms_mats = rms_mats;
+    var_stats.jacksheet = jacksheet;
+    var_stats.window_center_sec = window_center_sec;
+    
+    save(output_fpath, 'var_stats');
 
 end

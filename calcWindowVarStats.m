@@ -1,4 +1,4 @@
-function calcWindowStats(data_mat, sampling_freq, output_fpath, jacksheet)
+function calcWindowVarStats(data_mat, sampling_freq, output_fpath, jacksheet)
 
     if size(data_mat, 1) ~= size(jacksheet, 1)
         error('number of jacksheet rows must match number of channels in data_mat (rows)');

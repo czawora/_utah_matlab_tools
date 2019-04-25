@@ -1,4 +1,4 @@
-function globalReref_allchan(input_fpath, output_fpath, refset)
+function globalReref_allchan(input_fpath, output_fpath)
 
     fprintf('starting\n');
 
@@ -18,6 +18,20 @@ function globalReref_allchan(input_fpath, output_fpath, refset)
     end
     
     writemda(input_data, output_fpath, 'float32');
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % calculate some variance stats
+    
+    [input_path , ~, ~] = fileparts(FILE)
+    
+    chan_var = var(input_data, 0, 2);
+    chan_rms = rms(input_data, 2);
+    
+    chan_var_stats = struct;
+    chan_var_stats.chan_var = chan_var;
+    chan_var_stats.chan_rms = chan_rms;
+    
+    save()
         
     fprintf('globalReref_allchan -- done');
 
