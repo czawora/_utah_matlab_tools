@@ -124,8 +124,11 @@ function nsx2mda(varargin)
    
     output_mda_fpath = [session_dir '/' sprintf('refset%d.mda', refset)];
     output_used_jacksheet_fpath = [session_dir '/' sprintf('jacksheet_refset%d.csv', refset)];
+    output_var_stats_fpath = [session_dir '/' sprintf('var_stats_refset%d.csv', refset)];
     
     writemda(nsx.Data(reorder_idx, :), output_mda_fpath, 'int16');
     writetable(used_jacksheet, output_used_jacksheet_fpath);
+    
+    calcWindowStats(nsx.Data(reorder_idx, :), used_jacksheet{1, 'SampFreq'}, output_var_stats_fpath, used_jacksheet);
 
 end
