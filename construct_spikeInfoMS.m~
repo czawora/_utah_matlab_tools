@@ -13,10 +13,11 @@ p.addParameter('split_path', '', @ischar);
 p.addParameter('analog_pulse_fpath', '', @ischar);
 p.addParameter('nev_fpath', '', @ischar);
 p.addParameter('saveRoot', '', @ischar);
-p.addParameter('jacksheet_fpath', '', @ischar);
+p.addParameter('full_jacksheet_fpath', '', @ischar);
+p.addParameter('used_jacksheet_fpath', '', @ischar);
 
 p.addParameter('removeLargeAmpUnits', '0', @ischar);
-p.addParameter('bp_fname_suffix', 'mda_chan', @ischar);
+p.addParameter('split_fname_suffix', 'mda_chan', @ischar);
 p.addParameter('firings_fname', 'firings.mda', @ischar);
 p.addParameter('metrics_fname', 'metrics.json', @ischar);
 p.addParameter('isol_metrics_fname', 'isol_metrics.json', @ischar);
@@ -36,17 +37,9 @@ analog_pulse_fpath = p.Results.analog_pulse_fpath;
 nev_fpath = p.Results.nev_fpath;
 saveRoot = p.Results.saveRoot;
 full_jacksheet_fpath = p.Results.full_jacksheet_fpath;
+used_jacksheet_fpath = p.Results.used_jacksheet_fpath;
 
-bp_fname_suffix = p.Results.bp_fname_suffix;
 removeLargeAmpUnits = eval(p.Results.removeLargeAmpUnits);
-firings_fname = p.Results.firings_fname;
-metrics_fname = p.Results.metrics_fname;
-isol_metrics_fname = p.Results.isol_metrics_fname;
-isol_pair_metrics_fname = p.Results.isol_pair_metrics_fname;
-clip_features_fname = p.Results.clip_features_fname;
-clips_raw_fname = p.Results.clips_raw_fname;
-clips_spike_fname = p.Results.clips_spike_fname;
-clips_whiten_fname = p.Results.clips_whiten_fname;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % path contents
@@ -60,35 +53,18 @@ split_path_ls_names = {split_path_ls.name};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load full jacksheet + used jacksheets
 
-% find refset jacksheets in session_path_ls
-refset_jacksheet_filt = cellfun( @(x) contains(x, 'jacksheet_refset') , session_path_ls_names);
-sorted_refset_jacksheet_names = sort(session_path_ls_names(refset_jacksheet_filt));
-
-num_refset_jacksheet = length(sorted_refset_jacksheet_names);
-refset_jacksheets = cell(num_refset_jacksheet, 1);
-
-for iJack = 1:num_refset_jacksheet
-    refset_jacksheet_fpath = [session_path '/' sorted_refset_jacksheet_names{iJack}];
-    refset_jacksheets{iJack} = readtable(refset_jacksheet_fpath);
-end
-
+used_jacksheet = readtable(used_jacksheet_fpath);
 full_jacksheet = readtable(full_jacksheet_fpath);
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % how many channels were split for processing
 
-for iJack = 1:num_refset_jacksheet
-    refset_jacksheet_fpath = [session_path '/' sorted_refset_jacksheet_names{iJack}];
-    refset_jacksheets{iJack} = readtable(refset_jacksheet_fpath);
-end
-
+num_orig_split_chan = size(used_jacksheet, 1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get session start time
 
 session_start_time = full_jacksheet{1, 'RawDir'}{1};
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get list of session channels in this split_fpath
@@ -105,10 +81,9 @@ channel_dirs = sort({split_path_ls_names(filtered_channel_ls)});
 num_channels = sum( filtered_channel_ls );
 
 
-if length(used_chan) ~= num_channels
-   error('length(used_chan) ~= num_channels --- the number of split files with results does not equal the number of channels in all used_chan.txt');
+if num_orig_split_chan ~= num_channels
+   error('num_orig_split_chan ~= num_channels --- the number of split files with results does not equal the number of channels originaly split for sorting');
 end
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,6 +168,16 @@ fprintf('%d channels in session %s\n', size(data_cmat, 1), sess);
 fprintf('total spikes across all channels for session %s is %d\n', sess, num_spikes);
 fprintf('number of unique units across all channels for session %s is %d\n', sess, num_unique_units);
 
+
+    %%%%%%%%%%%%%%%%%%%%%%
+    %plot the channel fig
+    channel_dname_split = strsplit(channel_dname, '_');
+    channel_num = channel_dname_split{end};
+    sortfigs_saveRoot = [saveRoot '/sortFigs'];
+
+    plotChannelSpikes('session_name', sess, 'channel_num', channel_num, 'clip_features', clip_features_fpath, ...
+                      'clips', clips_pathf, 'firings', firings_pathf, 'isol_metrics', isol_metrics_pathf, 'isol_pair_metrics', isol_pair_metrics_pathf, ...
+                      'metrics', metrics_pathf, 'mda', bp_pathf, 'saveDir', sortfigs_saveRoot);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -548,6 +533,76 @@ fclose(filt_sum_fid);
 
 fprintf('construct_spikeInfoMS -- done\n');
 
+
+end
+
+function t = load_chan_dirs(filtered_channel_ls, split_path, parser)
+
+split_fname_suffix = parser.Results.split_fname_suffix;
+firings_fname = parser.Results.firings_fname;
+metrics_fname = parser.Results.metrics_fname;
+isol_metrics_fname = parser.Results.isol_metrics_fname;
+isol_pair_metrics_fname = parser.Results.isol_pair_metrics_fname;
+clip_features_fname = parser.Results.clip_features_fname;
+clips_raw_fname = parser.Results.clips_raw_fname;
+clips_spike_fname = parser.Results.clips_spike_fname;
+clips_whiten_fname = parser.Results.clips_whiten_fname;
+
+num_channels = length(filtered_channel_ls);
+
+t_varNames = {'chan_dir' 'firings' 'clips_raw' 'clips_spike' 'clips_whiten' 'metrics' 'isol_metrics' 'isol_pair_metrics' 'lp_reref_fpath' 'hp_reref_fpath' 'hp_reref_whiten_fpath'};
+t = table([], [], [], [], [], [], [], [], [], [], [], 'VariableNames', t_varNames);
+
+channelTotals = zeros(num_channels, 1);
+num_spikes = 0;
+num_unique_units = 0;
+
+for iChan = 1:num_channels
+    
+    fprintf('loading %s\n', filtered_channel_ls{iChan});
+    
+    channel_dir = [ split_path '/' filtered_channel_ls{iChan} ];
+    
+    hp_reref_whiten_fpath = [ channel_dir '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
+    hp_reref_fpath = [ split_path '/../splits_spike/' filtered_channel_ls{iChan} '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
+    lp_reref_fpath = [ split_path '/../splits_raw/' filtered_channel_ls{iChan} '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
+        
+    firings_fpath = [channel_dir '/' firings_fname];
+    firings = readmda(firings_fpath);
+    
+    metrics_fpath = [channel_dir '/' metrics_fname];
+    metrics_struct = readjson(metrics_fpath);
+    metrics = metrics_struct.clusters;
+    
+    isol_metrics_fpath = [channel_dir '/' isol_metrics_fname];
+    isol_metrics_struct = readjson(isol_metrics_fpath);
+    isol_metrics = isol_metrics_struct.clusters;
+    
+    isol_pair_metrics_fpath = [channel_dir '/' isol_pair_metrics_fname];
+    isol_pair_metrics_struct = readjson(isol_pair_metrics_fpath);
+    isol_pair_metrics = isol_pair_metrics_struct.cluster_pairs;
+    
+    clips_raw_fpath = [channel_dir '/' clips_raw_fname];
+    clips_raw = squeeze(readmda(clips_raw_fpath));
+    
+    clips_spike_fpath = [channel_dir '/' clips_spike_fname];
+    clips_spike = squeeze(readmda(clips_spike_fpath));
+
+    clips_whiten_fpath = [channel_dir '/' clips_whiten_fname];
+    clips_whiten = squeeze(readmda(clips_whiten_fpath));
+    
+    clip_features_fpath = [channel_dir '/' clip_features_fname];
+    
+    
+    
+    %record some details
+    num_spikes = num_spikes + size(firings, 2);
+    num_unique_units = num_unique_units + length(unique(firings(3,:)));
+    channelTotals(iChan) = length(unique(firings(3,:)));
+    
+    clip_size = size( data_cmat{i, clips_col} , 1);
+    
+end
 
 end
 
