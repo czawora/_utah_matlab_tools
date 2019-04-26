@@ -10,11 +10,7 @@ function nsx2mda(varargin)
     p.addParameter('jacksheet_fpath', '/Volumes/72A/UTAH_A/NIH036/data_raw/151211_1041/jacksheetBR_complete.csv', @ischar);
     p.addParameter('refset', '1', @ischar);
     p.addParameter('session_dir', '/Users/zaworaca/Desktop/Desktop/debug/ms_debug/NIH036_151211_1041', @ischar);
-    p.addParameter('min_range_cutoff_ungained', '10', @ischar);
-    p.addParameter('min_duration_data_min', '5', @ischar);
-    
-    p.addParameter('ignoreShortFile', '1', @ischar);
-    
+   
     parse(p, varargin{:});
     
     disp(p.Results);
@@ -23,17 +19,13 @@ function nsx2mda(varargin)
     jacksheet_fpath = p.Results.jacksheet_fpath;
     refset = p.Results.refset;
     session_dir = p.Results.session_dir;
-    min_range_cutoff_ungained = eval(p.Results.min_range_cutoff_ungained);
-    min_duration_data_min = eval(p.Results.min_duration_data_min);
     
     if isequal(refset, '') 
         error('refset must be an string integer matching a microDevNum in the jacksheet');
     else
         refset = eval(refset);
     end
-    
-    ignoreShortFile = logical(str2num(p.Results.ignoreShortFile));
-    
+        
     if ~exist(nsx_fpath, 'file')
        fprintf('%s is not a valid file\n', nsx_fpath); 
     end
@@ -46,37 +38,8 @@ function nsx2mda(varargin)
        fprintf('%s is not a valid dir\n', session_dir); 
     end
      
-    ignore_me_fname = [session_dir sprintf('/_ignore_me%d.txt', refset)];
-
-    %convert min_range_cutoff_microvolt to millivolt
-    min_range_cutoff_millivolt = min_range_cutoff_ungained * 0.25 * (1/1000); 
-    
     % read the jacksheet    
-    jacksheet = readtable(jacksheet_fpath);
-    
-    % jacksheet for this refset
-    used_jacksheet = jacksheet( (jacksheet{:,'MicroDevNum'} == refset) & (jacksheet{:,'RangeMilliV'} > min_range_cutoff_millivolt) , : );
-    
-    % check if all the channels failed to pass the range filter
-    if isempty(used_jacksheet)
-       
-        ignore_me_fid = fopen(ignore_me_fname, 'w');
-        fprintf(ignore_me_fid, 'all channels have data range < %0.4f milliV', min_range_cutoff_millivolt);
-        fclose(ignore_me_fid);
-    end
-    
-    % check if the file is too short to care about
-    if ignoreShortFile
-        
-        if used_jacksheet{1, 'DurationMin'} < min_duration_data_min
-            
-            ignore_me_fid = fopen(ignore_me_fname, 'w');
-            fprintf(ignore_me_fid, 'data length less than 5 min ( %0.2f )', nsx.MetaTags.DataDurationSec/60);
-            fclose(ignore_me_fid);
-        end
-        
-    end
-        
+    used_jacksheet = readtable(jacksheet_fpath);
 
     % read the data
     nsx = concatOpenNSx(nsx_fpath);
@@ -123,9 +86,6 @@ function nsx2mda(varargin)
     end
    
     output_mda_fpath = [session_dir '/' sprintf('refset%d.mda', refset)];
-    output_used_jacksheet_fpath = [session_dir '/' sprintf('jacksheet_refset%d.csv', refset)];
-    
     writemda(nsx.Data(reorder_idx, :), output_mda_fpath, 'int16');
-    writetable(used_jacksheet, output_used_jacksheet_fpath);
     
 end

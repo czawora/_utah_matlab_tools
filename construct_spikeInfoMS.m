@@ -76,7 +76,17 @@ full_jacksheet = readtable(full_jacksheet_fpath);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%get session start time
+% how many channels were split for processing
+
+num_orig_split_chan = 0;
+
+for iJack = 1:num_refset_jacksheet
+    num_orig_split_chan = num_orig_split_chan + size(refset_jacksheets{iJack}, 1);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get session start time
 
 session_start_time = full_jacksheet{1, 'RawDir'}{1};
 
@@ -92,14 +102,13 @@ filtered_channel_ls = cellfun( @(f) ...
                                 , split_path_ls_names);
                
 %sort channel directories                            
-channel_dirs = sort({channel_ls(filtered_channel_ls).name});
+channel_dirs = sort({split_path_ls_names(filtered_channel_ls)});
 num_channels = sum( filtered_channel_ls );
 
 
-if length(used_chan) ~= num_channels
-   error('length(used_chan) ~= num_channels --- the number of split files with results does not equal the number of channels in all used_chan.txt');
+if num_orig_split_chan ~= num_channels
+   error('num_orig_split_chan ~= num_channels --- the number of split files with results does not equal the number of channels originaly split for sorting');
 end
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

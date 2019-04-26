@@ -1,9 +1,5 @@
 function construct_spikeInfoMS(varargin)
 
-% echo construct_spikeInfoMS on;
- %NIH034_151001_1317_utah2_u
-% construct_spikeInfoMS_edits('saveRoot','/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/outputs', 'nev_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.nev', 'elementInfo_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2_elementInfo.txt', 'nsx_physio_fpath', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/NIH034_151001_1317_utah2.ns6', 'bp_fname_suffix', 'mda_chan', 'subj_str', 'NIH034', 'time_str', '151001_1317', 'nsp_str', 'utah2', 'sessRoot', '/Volumes/CZ_FRNU/spike_test/NIH034/NIH034_151001_1317_utah2/spike/splits');
-
 fprintf('****************************************************\n');
 fprintf('* %s\n', mfilename);
 
@@ -53,10 +49,13 @@ clips_spike_fname = p.Results.clips_spike_fname;
 clips_whiten_fname = p.Results.clips_whiten_fname;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% session_path contents
+% path contents
 
 session_path_ls = dir(session_path);
 session_path_ls_names = {session_path_ls.name};
+
+split_path_ls = dir(split_path);
+split_path_ls_names = {split_path_ls.name};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load full jacksheet + used jacksheets
@@ -69,73 +68,40 @@ num_refset_jacksheet = length(sorted_refset_jacksheet_names);
 refset_jacksheets = cell(num_refset_jacksheet, 1);
 
 for iJack = 1:num_refset_jacksheet
-    refset_jacksheet_fpath = [session_path '/' sorted_refset_jacksheet_names{}];
-    refset_jacksheets{iJack} = readtable();
+    refset_jacksheet_fpath = [session_path '/' sorted_refset_jacksheet_names{iJack}];
+    refset_jacksheets{iJack} = readtable(refset_jacksheet_fpath);
 end
 
 full_jacksheet = readtable(full_jacksheet_fpath);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%get session start time
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% read the elementInfo
+% how many channels were split for processing
 
-referencing_info = readtextcsv(elementInfo_fpath);
-num_refsets = size(referencing_info, 1);
-
-% read in the used channels
-used_chan_dir = dir([sessRoot '/..']);
-used_chan_dir_fnames = { used_chan_dir.name };
-
-used_chan = {};
-used_chan_by_refset = cell(num_refsets, 1);
-
-for iRefset = 1:num_refsets
-    
-    used_chans_fname_string = sprintf('refset%d_used_chans.txt', iRefset);
-    fprintf('used_chans_fname_string: %s\n', used_chans_fname_string);
-    
-    for iFile = 1:length(used_chan_dir_fnames)
-        
-       fprintf('looking for used_chans: %s\n', used_chan_dir_fnames{iFile});
-       if contains(used_chan_dir_fnames{iFile}, used_chans_fname_string)
-          
-           fprintf('choosing: %s\n', used_chan_dir_fnames{iFile});
-           used_chan_fpath = [sessRoot '/../' used_chan_dir_fnames{iFile}];
-           fprintf('%s\n', used_chan_fpath);
-           
-           used_chan_fid = fopen(used_chan_fpath);
-           fprintf('%d\n', used_chan_fid);
-           current_used_chan = textscan(used_chan_fid,'%s\n');
-           current_used_chan = current_used_chan{1};
-           fclose(used_chan_fid);
-           
-           used_chan = [ used_chan ; current_used_chan ];
-           used_chan_by_refset{iRefset} = current_used_chan;
-       end
-    end
-    
+for iJack = 1:num_refset_jacksheet
+    refset_jacksheet_fpath = [session_path '/' sorted_refset_jacksheet_names{iJack}];
+    refset_jacksheets{iJack} = readtable(refset_jacksheet_fpath);
 end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%step 1 - get list of session channels in this dir
+% get session start time
 
-channel_ls = dir(sessRoot);
+session_start_time = full_jacksheet{1, 'RawDir'}{1};
 
-%how many session channels are there?
-% is it a directory -- AND -- does it have a firings file?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get list of session channels in this split_fpath
+
+% is it a directory -- AND -- does it have a done.log file?
 filtered_channel_ls = cellfun( @(f) ...
                                 length(f) >= 3 ... %make sure its not a hidden file
-                                && exist([sessRoot '/' f], 'dir') ... %make sure its a directory
-                                && exist([sessRoot '/' f '/' firings_fname], 'file') ... %make sure there is a ms output file present, although this does not gauruntee that ms ran successfully
-                                , {channel_ls.name});
+                                && exist([split_path '/' f], 'dir') ... %make sure its a directory
+                                && exist([split_path '/' f '/done.log'], 'file') ... %make sure there is a ms output file present, although this does not gauruntee that ms ran successfully
+                                , split_path_ls_names);
                
 %sort channel directories                            
-channel_dirs = sort({channel_ls(filtered_channel_ls).name});
+channel_dirs = sort({split_path_ls_names(filtered_channel_ls)});
 num_channels = sum( filtered_channel_ls );
 
 
