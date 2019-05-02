@@ -152,7 +152,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         current_processed = processed( current_reference_match , :);
         current_chan_inds = 1:size(current_processed, 1);
-        current_chan_names = used_jacksheet{current_reference_match, 'ChanName'};
+        current_chan_names = used_jacksheet{current_reference_match, 'ChanName'}{1};
         
         refset_savedir = [save_dir sprintf('microDev%d', current_reference_num) '/'];
         
@@ -252,20 +252,20 @@ function variance_and_lineNoise_exclusion(varargin)
     analog_splits = strsplit(analog_pulse_fpath, '/');
     fprintf('getting the sync pulses from ns3: %s and nev: %s\n', analog_pulse_fpath, nev_fpath);
     pulses_struct = getBlackrockPulses_DC_AN('ns3_fpath', analog_pulse_fpath, 'nev_fpath', nev_fpath);
-    pulses = {used_jacksheet{1, 'NSPsuffix'} analog_splits{end} pulses_struct};
+    pulses = {used_jacksheet{1, 'NSPsuffix'}{1} used_jacksheet{1, 'FileName'}{1} pulses_struct};
     
     gain_bin2uV = 0.25;
     
     load([session_path '/nsx_postProc.mat']);
     physio_nsx_postProc = nsx_postProc;
-    physio_nsx_postProc = {used_jacksheet{1, 'NSPsuffix'} used_jacksheet{1, 'FileName'} physio_nsx_postProc};
+    physio_nsx_postProc = {used_jacksheet{1, 'NSPsuffix'}{1} used_jacksheet{1, 'FileName'}{1} physio_nsx_postProc};
     
     %extract start time from jacksheet
     dateInfo_column = 'FileName';
-    old_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column} , '\d\d\d\d\d\d_\d\d\d\d', 'match');
+    old_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d_\d\d\d\d', 'match');
     old_fmt_match = old_fmt_regex_match{1};
     
-    new_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column} , '\d\d\d\d\d\d\d\d-\d\d\d\d\d\d', 'match');
+    new_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d\d\d-\d\d\d\d\d\d', 'match');
     new_fmt_match = new_fmt_regex_match{1};
     
     if isempty(old_fmt_match) && isempty(new_fmt_match)
