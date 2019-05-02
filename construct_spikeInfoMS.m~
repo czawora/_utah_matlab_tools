@@ -16,7 +16,8 @@ p.addParameter('saveRoot', '', @ischar);
 p.addParameter('full_jacksheet_fpath', '', @ischar);
 p.addParameter('used_jacksheet_fpath', '', @ischar);
 
-p.addParameter('removeLargeAmpUnits', '0', @ischar);
+p.addParameter('skip_plots','0', @ischar);
+
 p.addParameter('split_fname_suffix', 'mda_chan', @ischar);
 p.addParameter('firings_fname', 'firings.mda', @ischar);
 p.addParameter('metrics_fname', 'metrics.json', @ischar);
@@ -26,6 +27,10 @@ p.addParameter('clips_raw_fname', 'clips_raw.mda', @ischar);
 p.addParameter('clips_spike_fname', 'clips_spike.mda', @ischar);
 p.addParameter('clips_whiten_fname', 'clips_whiten.mda', @ischar);
 p.addParameter('clip_features_fname', 'clip_features.mda', @ischar);
+
+p.addParameter('noise_overlap_max', '0.1', @ischar);
+p.addParameter('snr_min', '1', @ischar);
+p.addParameter('removeLargeAmpUnits', '1', @ischar);
 
 parse(p, varargin{:});
 
@@ -40,6 +45,14 @@ full_jacksheet_fpath = p.Results.full_jacksheet_fpath;
 used_jacksheet_fpath = p.Results.used_jacksheet_fpath;
 
 removeLargeAmpUnits = eval(p.Results.removeLargeAmpUnits);
+skip_plots = eval(p.Results.skip_plots);
+
+noise_overlap_max = eval(p.Results.noise_overlap_max);
+snr_min = eval(p.Results.snr_min);
+
+if ~exist(saveRoot, 'dir')
+    mkdir(saveRoot);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % path contents
@@ -54,7 +67,6 @@ split_path_ls_names = {split_path_ls.name};
 % load full jacksheet + used jacksheets
 
 used_jacksheet = readtable(used_jacksheet_fpath);
-full_jacksheet = readtable(full_jacksheet_fpath);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % how many channels were split for processing
@@ -62,9 +74,11 @@ full_jacksheet = readtable(full_jacksheet_fpath);
 num_orig_split_chan = size(used_jacksheet, 1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get session start time
+% get session start time + session name
 
-session_start_time = full_jacksheet{1, 'RawDir'}{1};
+session_name = used_jacksheet{1, 'RawDir'}{1};
+session_name_splits = strsplit(session_name, '_');
+session_start_time_str = strjoin(session_name_splits(1:2), '_');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get list of session channels in this split_fpath
@@ -77,7 +91,7 @@ filtered_channel_ls = cellfun( @(f) ...
                                 , split_path_ls_names);
                
 %sort channel directories                            
-channel_dirs = sort({split_path_ls_names(filtered_channel_ls)});
+channel_dirs = sort(split_path_ls_names(filtered_channel_ls));
 num_channels = sum( filtered_channel_ls );
 
 
@@ -85,132 +99,165 @@ if num_orig_split_chan ~= num_channels
    error('num_orig_split_chan ~= num_channels --- the number of split files with results does not equal the number of channels originaly split for sorting');
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% load sorted channel data into table
+
+fprintf('loading channels\n');
+loaded_chan = load_chan_dirs(channel_dirs, split_path, p);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%make cell array for holding each channel's sort outputs filenames
+% collect the number of spikes across all channels
 
-firings_col = 1;
-clips_col = 2;
-metrics_col = 3;
-isol_metrics_col = 4;
-isol_pair_metrics_col = 5;
-bp_col = 6;
-
-fields_per_channel = 6;
-
-data_cmat = cell( num_channels , fields_per_channel);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%collect the number of spikes across all channels as we load in data
+fprintf('count units\n');
 
 channelTotals = zeros(num_channels, 1);
 num_spikes = 0;
 num_unique_units = 0;
 
-if num_channels == 0
-    error('0 channels detected, make sure input directory is correct');
+for iChan = 1:num_channels
+    
+    current_firings = loaded_chan(iChan).firings;
+    
+    num_spikes = num_spikes + size(current_firings, 2);
+    num_unique_units = num_unique_units + length(unique(current_firings(3,:)));
+    channelTotals(iChan) = length(unique(current_firings(3,:)));
+        
 end
 
-for i = 1:num_channels
-    
-    channel_dname = channel_dirs{i};
-    channel_path = [sessRoot '/' channel_dname];
-    
-    fprintf('loading %s\n', channel_dname);
-    
-    bp_pathf_dir = dir([channel_path '/*' bp_fname_suffix]);
-    bp_pathf = [ bp_pathf_dir.folder '/' bp_pathf_dir.name ];
-    
-    fprintf('%s\n', bp_pathf);
-    
-    firings_pathf = [channel_path '/' firings_fname];
-    metrics_pathf = [channel_path '/' metrics_fname];
-    isol_metrics_pathf = [channel_path '/' isol_metrics_fname];
-    isol_pair_metrics_pathf = [channel_path '/' isol_pair_metrics_fname];
-    clips_pathf = [channel_path '/' clips_fname];
-    clip_features_fpath = [channel_path '/' clip_features_fname];
-    
-    data_cmat{i, bp_col} = bp_pathf;
-    data_cmat{i, firings_col} = readmda(firings_pathf);
-    data_cmat{i, clips_col} = squeeze(readmda(clips_pathf));
-    
-    metrics_struct = readjson(metrics_pathf);
-    data_cmat{i, metrics_col} = metrics_struct.clusters;
-    
-    isol_metrics_struct = readjson(isol_metrics_pathf);
-    data_cmat{i, isol_metrics_col} = isol_metrics_struct.clusters;
-    
-    isol_pair_metrics_struct = readjson(isol_pair_metrics_pathf);
-    data_cmat{i, isol_pair_metrics_col} = isol_pair_metrics_struct.cluster_pairs;
-    
-    %%%%%%%%%%%%%%%%%%%%%%
-    %plot the channel fig
-    channel_dname_split = strsplit(channel_dname, '_');
-    channel_num = channel_dname_split{end};
-    sortfigs_saveRoot = [saveRoot '/sortFigs'];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% plot the channel fig
 
-    plotChannelSpikes('session_name', sess, 'channel_num', channel_num, 'clip_features', clip_features_fpath, ...
-                      'clips', clips_pathf, 'firings', firings_pathf, 'isol_metrics', isol_metrics_pathf, 'isol_pair_metrics', isol_pair_metrics_pathf, ...
-                      'metrics', metrics_pathf, 'mda', bp_pathf, 'saveDir', sortfigs_saveRoot);
-    %%%%%%%%%%%%%%%%%%%%%%
-    
-    %record some details
-    num_spikes = num_spikes + size(data_cmat{i, firings_col}, 2);
-    num_unique_units = num_unique_units + length(unique(data_cmat{i, firings_col}(3,:)));
-    channelTotals(i) = length(unique(data_cmat{i, firings_col}(3,:)));
-    
-    clip_size = size( data_cmat{i, clips_col} , 1);
-    
+if ~skip_plots
+
+    fprintf('plot figs\n');
+
+    for iChan = 1:num_channels
+
+        chan_name = used_jacksheet{iChan, 'ChanName'}{1};
+        sortfigs_saveRoot = [saveRoot '/sortFigs'];
+
+        plotChannelSpikes('session_name', session_name, ...
+                          'channel_name', chan_name, ...
+                          'clip_features_fpath', loaded_chan(iChan).clips_whiten_features_fpath, ...
+                          'clips', loaded_chan(iChan).clips_raw, ...
+                          'firings', loaded_chan(iChan).firings, ...
+                          'isol_metrics', loaded_chan(iChan).isol_metrics, ...
+                          'isol_pair_metrics', loaded_chan(iChan).isol_pair_metrics, ...
+                          'metrics', loaded_chan(iChan).metrics, ...
+                          'mda_fpath', loaded_chan(iChan).hp_reref_whiten_fpath, ...
+                          'saveDir', sortfigs_saveRoot);
+
+    end
+
 end
 
-fprintf('%d channels in session %s\n', size(data_cmat, 1), sess);
-fprintf('total spikes across all channels for session %s is %d\n', sess, num_spikes);
-fprintf('number of unique units across all channels for session %s is %d\n', sess, num_unique_units);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% filter the units on the loaded channels
 
-
-    %%%%%%%%%%%%%%%%%%%%%%
-    %plot the channel fig
-    channel_dname_split = strsplit(channel_dname, '_');
-    channel_num = channel_dname_split{end};
-    sortfigs_saveRoot = [saveRoot '/sortFigs'];
-
-    plotChannelSpikes('session_name', sess, 'channel_num', channel_num, 'clip_features', clip_features_fpath, ...
-                      'clips', clips_pathf, 'firings', firings_pathf, 'isol_metrics', isol_metrics_pathf, 'isol_pair_metrics', isol_pair_metrics_pathf, ...
-                      'metrics', metrics_pathf, 'mda', bp_pathf, 'saveDir', sortfigs_saveRoot);
-
+[sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, metrics ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, used_jacksheet);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %now we can allocate the spikeInfo struct
+% 
+% spikeInfo_readme = '';
+% metrics_readme = '';
+% 
+% spikeInfo = struct;
+% spikeInfo.readme = spikeInfo_readme;
+% spikeInfo.createdDate = datestr(datetime('now'), 'mmm.dd,yyyy HH:MM:SS');
+% spikeInfo.sessUniqueUnitID = [];
+% spikeInfo.timeStamp = cell(num_unique_units, 1);
+% spikeInfo.waveForm = struct;
+% spikeInfo.waveForm_raw = struct;
+% spikeInfo.metrics = struct;
+% spikeInfo.sessStr = session_start_time_str;
+% spikeInfo.sessDurMin = used_jacksheet{1, 'DurationMin'};
+% spikeInfo.startTime_datenum = 0;
+% spikeInfo.extractInfoStr = {};
+% spikeInfo.pulses = {};
+% spikeInfo.alignedTo = '';
+% spikeInfo.alignmentChan = '';
+% spikeInfo.sort_dirname = 'reref_mountainsort';
+% spikeInfo.sort_filenames = {};
+% spikeInfo.jackTableSplit = used_jacksheet;
+% spikeInfo.jackTableUsed = [];
+% spikeInfo.sortNoteTable = {};
+% 
+% spikeInfo.waveForm.infoStr = 'mean and sd in uV, time in ms;  spike-band filtered (600-6000Hz)';
+% spikeInfo.waveForm.timeMS = [];
+% spikeInfo.waveForm.mean = [];
+% spikeInfo.waveForm.sd = [];
+% 
+% spikeInfo.waveForm_raw.infoStr = 'mean and sd in uV, time in ms;  unfiltered (1-5000Hz) after global reref';
+% spikeInfo.waveForm_raw.timeMS = [];
+% spikeInfo.waveForm_raw.mean = [];
+% spikeInfo.waveForm_raw.sd = [];
 
-spikeInfo                   = struct;
-spikeInfo.timeStamp         = cell(num_unique_units, 1);
-spikeInfo.waveForm          = cell(num_unique_units, 1);
-spikeInfo.uniqueUnitID      = cell(num_unique_units, 1);
+spikeInfo.metrics.fracISIbelowThr = zeros(num_unique_units, 1);
+spikeInfo.metrics.spkRate_eachMinute = zeros(num_unique_units, 1);
 
-spikeInfo.metrics                   = struct;
-spikeInfo.metrics.dur_sec           = zeros(num_unique_units, 1);
-spikeInfo.metrics.firing_rate       = zeros(num_unique_units, 1);
-spikeInfo.metrics.num_events        = zeros(num_unique_units, 1);
-spikeInfo.metrics.t1_sec            = zeros(num_unique_units, 1);
-spikeInfo.metrics.t2_sec            = zeros(num_unique_units, 1);
-spikeInfo.metrics.bursting_parent   = cell(num_unique_units, 1);
-spikeInfo.metrics.isolation         = zeros(num_unique_units, 1);
-spikeInfo.metrics.noise_overlap     = zeros(num_unique_units, 1);
-spikeInfo.metrics.peak_amp          = zeros(num_unique_units, 1);
-spikeInfo.metrics.peak_noise        = zeros(num_unique_units, 1);
-spikeInfo.metrics.peak_snr          = zeros(num_unique_units, 1);
-spikeInfo.metrics.pair_overlap      = cell(num_unique_units, 1);
+spikeInfo.metrics.readme = metrics_readme;
+spikeInfo.metrics.mountainsort = struct;
+spikeInfo.metrics.mountainsort.isolation = zeros(num_unique_units, 1);
+spikeInfo.metrics.mountainsort.noise_overlap = zeros(num_unique_units, 1);
+spikeInfo.metrics.mountainsort.peak_amp = zeros(num_unique_units, 1);
+spikeInfo.metrics.mountainsort.peak_noise = zeros(num_unique_units, 1);
+spikeInfo.metrics.mountainsort.peak_snr = zeros(num_unique_units, 1);
+spikeInfo.metrics.mountainsort.pair_overlap = zeros(num_unique_units, 1);
 
-%- cell array saved for each channel
-spikeInfo.extractInfoStr    = {};
+%                readme: 'this spikeInfo file, generated Mar.21,2019 15:38:59, ??
+%           createdDate: 'Mar.21,2019 15:38:59'
+%      sessUniqueUnitID: [4×9 table]
+%             timeStamp: {4×1 cell}
+%              waveForm: [1×1 struct]
+%          waveForm_raw: [1×1 struct]
+%               metrics: [1×1 struct]
+%               sessStr: '190117_1720'
+%            sessDurMin: 4.9000
+%     startTime_datenum: 7.3744e+05
+%        extractInfoStr: {2×1 cell}
+%                pulses: {'INST0'  'YfGGmZkGMfb-20190117-172012-INST0.ns5'  [1×1 struct]}
+%             alignedTo: ''
+%         alignmentChan: ''
+%          sort_dirname: 'reref(stimMask5)_sortedByJW'
+%        sort_filenames: {'[INST0]utah_amtg01.txt'  '[INST0]utah_pmtg01.txt'}
+%        jackTableSplit: [128×16 table]
+%         jackTableUsed: [2×16 table]
+%         sortNoteTable: {'sortNotes(190117_1720)_sortedByJW.xlsx'  [128×7 table]}
+% 
 
-spikeInfo.sessDurSec        = 0;
-spikeInfo.sessStr           = sess;
-spikeInfo.alignedTo         = '';
-spikeInfo.alignmentChan     = '';
-spikeInfo.startTime_mstime = nsxDateTime_mstime;
 
+sessUniqueUnitID = [];
+timeStamp = {};
+jackTableUsed = [];
+extractInfoStr = {};
+
+waveForm = struct;
+waveForm_raw = struct;
+
+waveForm.infoStr = 'mean and sd in uV, time in ms;  spike-band filtered (600-6000Hz)';
+waveForm.timeMS = [];
+waveForm.mean = [];
+waveForm.sd = [];
+
+waveForm_raw.infoStr = 'mean and sd in uV, time in ms;  unfiltered (1-5000Hz) after global reref';
+waveForm_raw.timeMS = [];
+waveForm_raw.mean = [];
+waveForm_raw.sd = [];
+
+metrics = struct;
+metrics.readme = metrics_readme;
+
+metrics.fracISIbelowThr = [];
+metrics.spkRate_eachMinute = [];
+
+metrics.mountainsort = struct;
+metrics.mountainsort.isolation = [];
+metrics.mountainsort.noise_overlap = [];
+metrics.mountainsort.peak_amp = [];
+metrics.mountainsort.peak_noise = [];
+metrics.mountainsort.peak_snr = [];
+metrics.mountainsort.pair_overlap = [];
 
               
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -536,475 +583,322 @@ fprintf('construct_spikeInfoMS -- done\n');
 
 end
 
-function t = load_chan_dirs(filtered_channel_ls, split_path, parser)
 
-split_fname_suffix = parser.Results.split_fname_suffix;
-firings_fname = parser.Results.firings_fname;
-metrics_fname = parser.Results.metrics_fname;
-isol_metrics_fname = parser.Results.isol_metrics_fname;
-isol_pair_metrics_fname = parser.Results.isol_pair_metrics_fname;
-clip_features_fname = parser.Results.clip_features_fname;
-clips_raw_fname = parser.Results.clips_raw_fname;
-clips_spike_fname = parser.Results.clips_spike_fname;
-clips_whiten_fname = parser.Results.clips_whiten_fname;
-
-num_channels = length(filtered_channel_ls);
-
-t_varNames = {'chan_dir' 'firings' 'clips_raw' 'clips_spike' 'clips_whiten' 'metrics' 'isol_metrics' 'isol_pair_metrics' 'lp_reref_fpath' 'hp_reref_fpath' 'hp_reref_whiten_fpath'};
-t = table([], [], [], [], [], [], [], [], [], [], [], 'VariableNames', t_varNames);
-
-channelTotals = zeros(num_channels, 1);
-num_spikes = 0;
-num_unique_units = 0;
-
-for iChan = 1:num_channels
+function [sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, used_jacksheet)
     
-    fprintf('loading %s\n', filtered_channel_ls{iChan});
-    
-    channel_dir = [ split_path '/' filtered_channel_ls{iChan} ];
-    
-    hp_reref_whiten_fpath = [ channel_dir '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
-    hp_reref_fpath = [ split_path '/../splits_spike/' filtered_channel_ls{iChan} '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
-    lp_reref_fpath = [ split_path '/../splits_raw/' filtered_channel_ls{iChan} '/' filtered_channel_ls{iChan} '.' split_fname_suffix];
-        
-    firings_fpath = [channel_dir '/' firings_fname];
-    firings = readmda(firings_fpath);
-    
-    metrics_fpath = [channel_dir '/' metrics_fname];
-    metrics_struct = readjson(metrics_fpath);
-    metrics = metrics_struct.clusters;
-    
-    isol_metrics_fpath = [channel_dir '/' isol_metrics_fname];
-    isol_metrics_struct = readjson(isol_metrics_fpath);
-    isol_metrics = isol_metrics_struct.clusters;
-    
-    isol_pair_metrics_fpath = [channel_dir '/' isol_pair_metrics_fname];
-    isol_pair_metrics_struct = readjson(isol_pair_metrics_fpath);
-    isol_pair_metrics = isol_pair_metrics_struct.cluster_pairs;
-    
-    clips_raw_fpath = [channel_dir '/' clips_raw_fname];
-    clips_raw = squeeze(readmda(clips_raw_fpath));
-    
-    clips_spike_fpath = [channel_dir '/' clips_spike_fname];
-    clips_spike = squeeze(readmda(clips_spike_fpath));
-
-    clips_whiten_fpath = [channel_dir '/' clips_whiten_fname];
-    clips_whiten = squeeze(readmda(clips_whiten_fpath));
-    
-    clip_features_fpath = [channel_dir '/' clip_features_fname];
-    
-    
-    
-    %record some details
-    num_spikes = num_spikes + size(firings, 2);
-    num_unique_units = num_unique_units + length(unique(firings(3,:)));
-    channelTotals(iChan) = length(unique(firings(3,:)));
-    
-    clip_size = size( data_cmat{i, clips_col} , 1);
-    
-end
-
-end
-
-function sessUniqueUnitID = expandUnitIDInfo(uniqueUnitID, referencing_info, used_chan_by_refset)
-
-
-    sessUniqueUnitID = cell(length(uniqueUnitID), 6);
-    
-    for iUnit = 1:length(uniqueUnitID)
-       
-        current_unit = uniqueUnitID{iUnit};
-        
-        current_unit_splits = strsplit(current_unit, '_');
-        
-        nsx_chan_name = current_unit_splits{1};
-        
-        %get the array location and array num
-        %which reference set is it a part of?
-        
-        refset_array_num = 0;
-        refset_array_location = 0;
-        
-        for iRefset = 1:length(used_chan_by_refset)
-            
-            if any(cellfun(@(x) isequal(x, nsx_chan_name), used_chan_by_refset{iRefset}))
-                % match!
-            
-                refset_array_num = str2num(referencing_info{iRefset, 5});
-                refset_array_location = str2num(referencing_info{iRefset, 6});
-            end
-        end
-        
-        
-        fprintf('refset_array_num: %d\n', refset_array_num);
-        fprintf('refset_array_location: %d\n', refset_array_location);
-    
-        
-        %get the unit num
-        current_unit_num = str2num(current_unit_splits{2});
-        
-        %get the channelnum
-        [startIndex,endIndex] = regexp(nsx_chan_name,'\d+');
-        current_chan_num = str2num(nsx_chan_name(startIndex:endIndex));
-        
-        combined_unit_num = (refset_array_location * 1e6) + (current_chan_num * 1e3) + current_unit_num;
-        
-        sessUniqueUnitID{iUnit, 1} = current_chan_num;
-        sessUniqueUnitID{iUnit, 2} = current_unit_num;
-        sessUniqueUnitID{iUnit, 3} = refset_array_location;
-        sessUniqueUnitID{iUnit, 4} = combined_unit_num;
-        sessUniqueUnitID{iUnit, 5} = refset_array_num;
-        sessUniqueUnitID{iUnit, 6} = current_unit;
-      
-    end
-
-end
-
-function [spikeInfo_filt, noiseInfo, filter_dmat] = filterSpikes(spikeInfo, noise_overlap_max, snr_min, isolation_min, removeLargeAmpUnits)
-
-    orig_unitID_col = 1;
-    filt_unitID_col = 2;
-    filter_type_col = 3;
-    unit_channel_col = 4;
-    num_spikes_col = 5;
-    snr_col = 6;
-    isolation_col = 7;
-    noise_overlap_col = 8;
-    
-    
-    filter_dmat = cell(length(spikeInfo.uniqueUnitID), 8);
-    %first column is original unit name
-    % then filtered unit name
-    % filter type
-    % channel of unit
-    % spikes for unit
-    
-    if removeLargeAmpUnits == 1
-
-        largeAmp = 5000;
+    if removeLargeAmpUnits 
+        amp_thresh = 5000;
     else
+        amp_thresh = Inf;
+    end
 
-        largeAmp = Inf;
-    end
-    
-    current_renaming_chan = '';
-    noise_spikes = 0;
-    noise_units = 0;
-    
-    num_unique_units = size(spikeInfo.uniqueUnitID, 1);
-    
-    %label units as noise, non-isolated, and unit
-    for iUnit = 1:length(spikeInfo.uniqueUnitID)
-        
-        current_unitID = spikeInfo.uniqueUnitID{iUnit};  
-                
-        current_unitID_splits = strsplit(current_unitID, '_');
-        current_chan = current_unitID_splits{1};
-        %current_ID_num = current_unitID_splits{2};
-        
-        filter_dmat{iUnit, orig_unitID_col} = current_unitID;
-        filter_dmat{iUnit, unit_channel_col} = current_chan;
-        filter_dmat{iUnit, num_spikes_col} = length(spikeInfo.timeStamp{iUnit});
-        
-        filter_dmat{iUnit, snr_col} = spikeInfo.metrics.peak_snr(iUnit);
-        filter_dmat{iUnit, isolation_col} = spikeInfo.metrics.isolation(iUnit);
-        filter_dmat{iUnit, noise_overlap_col} = spikeInfo.metrics.noise_overlap(iUnit);
-                
-        %determine unit type
-        if ~(spikeInfo.metrics.noise_overlap(iUnit) < noise_overlap_max ...
-                && spikeInfo.metrics.peak_snr(iUnit) > snr_min ...
-                && spikeInfo.metrics.peak_amp(iUnit) < largeAmp)
-            %this is noise unit
-            
-            filter_dmat{iUnit, filter_type_col} = 'noise';
-            
-            noise_spikes = noise_spikes + length(spikeInfo.timeStamp{iUnit});
-            noise_units = noise_units + 1;
-            
-        elseif ~(spikeInfo.metrics.isolation(iUnit) > isolation_min)
-            
-            filter_dmat{iUnit, filter_type_col} = 'non-isolated';
-        else
-            filter_dmat{iUnit, filter_type_col} = 'unit';
-        end
-        
-        if ~isequal(current_chan, current_renaming_chan)
-            
-            noise_unit_count = 1;
-            preserved_unit_count = 1;
-            current_renaming_chan = current_chan;
-        end
-        
-        if isequal(filter_dmat{iUnit, filter_type_col}, 'noise')
-            
-            %noise_unit_ID = [current_chan '_nz0' num2str(noise_unit_count)];
-            noise_unit_ID = [current_chan '_nz' sprintf('%03d', noise_unit_count) ];
-            filter_dmat{iUnit, filt_unitID_col} = noise_unit_ID;
-            
-            noise_unit_count = noise_unit_count + 1;
-        else
-            
-            %filt_unit_ID = [current_chan '_0' num2str(preserved_unit_count)];
-            filt_unit_ID = [current_chan '_' sprintf('%03d',preserved_unit_count) ];
-            filter_dmat{iUnit, filt_unitID_col} = filt_unit_ID;
-            
-            preserved_unit_count = preserved_unit_count + 1;
-        end
-        
-    end
-    
-    
-    %update extractInfoStrs
-    
-    infoStrs = spikeInfo.extractInfoStr;
-    
-    for iStr = 1:length(infoStrs)
-        
-        infoStrs_splits = strsplit(infoStrs{iStr}, ' --> ');
-        full_channel_name = infoStrs_splits{1};
-        full_channel_name_splits = strsplit(full_channel_name, '_');
-        channel_name = full_channel_name_splits{end};
-        
-        per_channel_noise_units = 0;
-        per_channel_noise_spikes = 0;
-        
-        per_channel_non_noise_units = 0;
-        per_channel_non_noise_spikes = 0;
-        
-        for jUnit = 1:size(filter_dmat,1)
-            
-            if isequal(filter_dmat{jUnit, unit_channel_col} , channel_name)
-                
-                if isequal(filter_dmat{jUnit, filter_type_col} , 'noise')
-                    
-                    per_channel_noise_units = per_channel_noise_units + 1;
-                    per_channel_noise_spikes = per_channel_noise_spikes + filter_dmat{jUnit, num_spikes_col};
-                else
-                    
-                    per_channel_non_noise_units = per_channel_non_noise_units + 1;
-                    per_channel_non_noise_spikes = per_channel_non_noise_spikes + filter_dmat{jUnit, num_spikes_col};
-                end
-            end
-            
-        end
-        
-        new_infoStr = [infoStrs{iStr} ' --> filter --> ' num2str(per_channel_noise_units) ' noise units, ' num2str(per_channel_noise_spikes) ' spikes; ' num2str(per_channel_non_noise_units) ' units, ' num2str(per_channel_non_noise_spikes) ' spikes'];
-        infoStrs{iStr} = new_infoStr;
-    end
-    
-    disp(filter_dmat);
-    
-    non_noise_units = num_unique_units - noise_units;
-        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %create noise info struct
-    
-    noiseInfo                   = struct;
-    noiseInfo.timeStamp         = cell(noise_units, 1);
-    noiseInfo.waveForm          = cell(noise_units, 1);
-    noiseInfo.uniqueUnitID      = cell(noise_units, 1);
-    
-    noiseInfo.metrics                   = struct;
-    noiseInfo.metrics.dur_sec           = zeros(noise_units, 1);
-    noiseInfo.metrics.firing_rate       = zeros(noise_units, 1);
-    noiseInfo.metrics.num_events        = zeros(noise_units, 1);
-    noiseInfo.metrics.t1_sec            = zeros(noise_units, 1);
-    noiseInfo.metrics.t2_sec            = zeros(noise_units, 1);
-    noiseInfo.metrics.bursting_parent   = cell(noise_units, 1);
-    noiseInfo.metrics.isolation         = zeros(noise_units, 1);
-    noiseInfo.metrics.noise_overlap     = zeros(noise_units, 1);
-    noiseInfo.metrics.peak_amp          = zeros(noise_units, 1);
-    noiseInfo.metrics.peak_noise        = zeros(noise_units, 1);
-    noiseInfo.metrics.peak_snr          = zeros(noise_units, 1);
-    noiseInfo.metrics.pair_overlap      = cell(noise_units, 1);
-    
-    noiseInfo.extractInfoStr    = infoStrs;
-    noiseInfo.sessDurSec        = spikeInfo.sessDurSec;
-    noiseInfo.sessStr           = spikeInfo.sessStr;
-    noiseInfo.alignedTo         = '';
-    noiseInfo.alignmentChan     = '';    
-    noiseInfo.startTime_mstime = spikeInfo.startTime_mstime;
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %create filtered spike info struct
-    
-    spikeInfo_filt                   = struct;
-    spikeInfo_filt.timeStamp         = cell(non_noise_units, 1);
-    spikeInfo_filt.waveForm          = cell(non_noise_units, 1);
-    spikeInfo_filt.uniqueUnitID      = cell(non_noise_units, 1);
-    
-    spikeInfo_filt.metrics                   = struct;
-    spikeInfo_filt.metrics.dur_sec           = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.firing_rate       = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.num_events        = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.t1_sec            = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.t2_sec            = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.bursting_parent   = cell(non_noise_units, 1);
-    spikeInfo_filt.metrics.isolation         = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.noise_overlap     = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.peak_amp          = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.peak_noise        = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.peak_snr          = zeros(non_noise_units, 1);
-    spikeInfo_filt.metrics.pair_overlap      = cell(non_noise_units, 1);
-    
-    spikeInfo_filt.extractInfoStr    = infoStrs;
-    spikeInfo_filt.sessDurSec        = spikeInfo.sessDurSec;    
-    spikeInfo_filt.sessStr           = spikeInfo.sessStr;
-    spikeInfo_filt.alignedTo         = '';        
-    spikeInfo_filt.alignmentChan     = '';    
-    spikeInfo_filt.startTime_mstime  = spikeInfo.startTime_mstime;
-    
-    %%%%%%%%
-    % seperate the spikeInfo
-    
-    noise_units_added = 1;
-    filt_units_added = 1;
-    
-    for iUnit = 1:length(spikeInfo.uniqueUnitID)
-        
-        current_unit_filt_type = filter_dmat{iUnit, filter_type_col};
-        fprintf('filtering unit %s\n', spikeInfo.uniqueUnitID{iUnit});
-        
-        if isequal(current_unit_filt_type, 'noise')
-            
-            %get the new unit name
-            noise_unit_ID = filter_dmat{iUnit, filt_unitID_col};
-            
-            noiseInfo.timeStamp{noise_units_added} = spikeInfo.timeStamp{iUnit};
-            noiseInfo.waveForm{noise_units_added}  = spikeInfo.waveForm{noise_units_added};
-            
-            noiseInfo.uniqueUnitID{noise_units_added}              = noise_unit_ID;
-            
-            noiseInfo.metrics.dur_sec(noise_units_added)           = spikeInfo.metrics.dur_sec(iUnit);
-            noiseInfo.metrics.firing_rate(noise_units_added)       = spikeInfo.metrics.firing_rate(iUnit);
-            noiseInfo.metrics.num_events(noise_units_added)        = spikeInfo.metrics.num_events(iUnit);
-            noiseInfo.metrics.t1_sec(noise_units_added)            = spikeInfo.metrics.t1_sec(iUnit);
-            noiseInfo.metrics.t2_sec(noise_units_added)            = spikeInfo.metrics.t2_sec(iUnit);
-            
-            %find the new name for the bursting parent
-            %should return one index
-            if ~isequal(spikeInfo.metrics.bursting_parent{iUnit}, 0)
-                burst_parent_idx = cellfun(@(x) isequal(x, spikeInfo.metrics.bursting_parent{iUnit}), spikeInfo.uniqueUnitID);
-                noiseInfo.metrics.bursting_parent{noise_units_added}   = filter_dmat{burst_parent_idx, filt_unitID_col};
-            else
-                noiseInfo.metrics.bursting_parent{noise_units_added} = 0;
-            end
-            
-            noiseInfo.metrics.isolation(noise_units_added)         = spikeInfo.metrics.isolation(iUnit);
-            noiseInfo.metrics.noise_overlap(noise_units_added)     = spikeInfo.metrics.noise_overlap(iUnit);
-            noiseInfo.metrics.peak_amp(noise_units_added)          = spikeInfo.metrics.peak_amp(iUnit);
-            noiseInfo.metrics.peak_noise(noise_units_added)        = spikeInfo.metrics.peak_noise(iUnit);
-            noiseInfo.metrics.peak_snr(noise_units_added)          = spikeInfo.metrics.peak_snr(iUnit);
+    clip_timeMS_leftBound = -2;
+    clip_timeMS_rightBound = 5;
 
-            current_unit_pair_overlap = spikeInfo.metrics.pair_overlap{iUnit};
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % define outputs 
+    
+    sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
+    sessUniqueUnitID = table([], [], [], [], [], [], [], [], [], 'VariableNames', sessUniqueUnitID_varNames);
+
+    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', used_jacksheet.Properties.VariableNames);
+
+    timeStamp = {};
+    extractInfoStr = {};
+
+    waveForm = struct;
+    waveForm_all = {};
+    
+    waveForm_raw = struct;
+    waveForm_raw_all = {};
+    
+    waveForm_sort = struct;
+    waveForm_sort_all = {};
+    
+    waveForm.infoStr = 'mean and sd in uV, time in ms; global reref, spike-band filtered (600-6000Hz)';
+    waveForm.timeMS = [];
+    waveForm.mean = [];
+    waveForm.sd = [];
+
+    waveForm_raw.infoStr = 'mean and sd in uV, time in ms; global reref, unfiltered (1-5000Hz)';
+    waveForm_raw.timeMS = [];
+    waveForm_raw.mean = [];
+    waveForm_raw.sd = [];
+
+    waveForm_sort.infoStr = 'mean and sd in uV, time in ms; global reref, spike-band filtered (600-6000Hz), whitened (the actual sorted data)';
+    waveForm_sort.timeMS = [];
+    waveForm_sort.mean = [];
+    waveForm_sort.sd = [];
+    
+    
+    metrics_readme = [ 'spike Info metrics contains: ' newline ...
+                       'mountainsort is a struct containing isolation, noise_overlap, peak_amp, peak_noise, peak_snr, pair_overlap . See original paper for all details https://doi.org/10.1016/j.neuron.2017.08.030' newline ...
+                       '   noise_overlap -- (0 - 1) 0 indicating no overlap with generated noise cluster, 1 indicating unit indistinguishable from the generated noise cluster' newline ...
+                       '   peak_amp -- average value at peak/trough of unit waveform' newline ...
+                       '   peak_noise -- sd of values at peak/trough of unit waveform' newline ...
+                       '   peak_snr -- peak_amp/peak_noise' newline ...
+                       'ISIcontamination   -- vector of fraction of ISIs that were less than absolute refractory period of 2ms' newline ...
+                       'spkRate_eachMinute -- cell array with time series of spike rate (spikes/sec) per 1min interval for duration of recording. This is a first order stability measure.' ];
+    
+    metrics = struct;
+    metrics.readme = metrics_readme;
+
+    metrics.fracISIbelowThr = [];
+    metrics.spkRate_eachMinute = {};
+
+    metrics.mountainsort = struct;
+    metrics.mountainsort.isolation = [];
+    metrics.mountainsort.noise_overlap = [];
+    metrics.mountainsort.peak_amp = [];
+    metrics.mountainsort.peak_noise = [];
+    metrics.mountainsort.peak_snr = [];
+    metrics.mountainsort.pair_overlap = [];
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    num_channels = length(loaded_chan);
+    num_total_units_added = 0;
+    
+    for iChan = 1:num_channels
+        
+        % how many units found on this channel
+        channel_unique_units = unique(loaded_chan(iChan).firings(3,:));        
+        num_units = length(channel_unique_units);
+        
+        selected_units_mountainsort_ID = [];
+        selected_units_combinedNum = [];
+        selected_units_total_count_inx = [];
+        
+        chan_SampFreq = used_jacksheet{iChan,'SampFreq'};
+        sampFreq2MS_factor = chan_SampFreq/1000;
+        
+        % isol_metrics labels
+        channel_isol_metrics_labels = [ loaded_chan(iChan).isol_metrics.clusters.label ];
+        
+        % incrementers
+        num_channel_units_added = 0;
+        num_channel_unit_spikes = 0;
+        
+        first_channel_unit = 1;
+        
+        
+        for iUnit = 1:num_units
             
-            if isempty(current_unit_pair_overlap.pair)
-                
-                noiseInfo.metrics.pair_overlap{noise_units_added}      = current_unit_pair_overlap;
+            unit_firings_name = channel_unique_units(iUnit);
             
-            else    
+            which_isol_metrics_idx = (channel_isol_metrics_labels == unit_firings_name);
+            
+            %does this unit pass the filter
+            
+            unit_amp = abs(loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.peak_amp);
+            unit_snr = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.peak_snr;
+            unit_noise_overlap = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.noise_overlap;
+            
+            if (unit_snr >= snr_min) && (unit_noise_overlap <= noise_overlap_max) && (unit_amp < amp_thresh)
                 
-                overlap_struct = struct;
-                overlap_struct.pair = cell(length(current_unit_pair_overlap.pair),1);
-                overlap_struct.overlap = current_unit_pair_overlap.overlap;
-                               
-                for ov = 1:length(current_unit_pair_overlap.pair)
-                    
-                    ov_split = strsplit(current_unit_pair_overlap.pair{ov}, ',');
-                    
-                    el1 = ov_split{1};
-                    el2 = ov_split{2};
-                    
-                    
-                    el1_idx = cellfun(@(x) isequal(x, el1), spikeInfo.uniqueUnitID);
-                    el2_idx = cellfun(@(x) isequal(x, el2), spikeInfo.uniqueUnitID);
-                    
-                    renamed_el1 = filter_dmat{el1_idx, filt_unitID_col};
-                    renamed_el2 = filter_dmat{el2_idx, filt_unitID_col};
-                    
-                    ov_unsplit = [renamed_el1 ',' renamed_el2];
-                                        
-                    overlap_struct.pair{ov} = ov_unsplit;
-                    
+                % increment unit counter for this channel
+                num_channel_units_added = num_channel_units_added + 1;
+
+                % increment unit counter for entire session
+                num_total_units_added = num_total_units_added + 1;
+                
+                
+                % add unit to sessUniqueUnitID
+                
+                PhysChanNum = used_jacksheet{iChan, 'PhysicalChan'};
+                UnitNum = num_channel_units_added;
+                DeviceNum = used_jacksheet{iChan, 'MicroDevNum'};
+                CombinedNum = (DeviceNum * 1e6) + (PhysChanNum * 1e3) + (UnitNum); 
+                ChanUnitName = [ used_jacksheet{iChan, 'ChanNameNew'}{1} '_' sprintf('%03d', UnitNum)];
+                NSxChanName = used_jacksheet{iChan, 'ChanName'}{1};
+                NSxFileName = used_jacksheet{iChan, 'FileName'}{1};
+                NSPsuffix = used_jacksheet{iChan, 'NSPsuffix'}{1};
+                ChanNameNew = used_jacksheet{iChan, 'ChanNameNew'}{1};
+                
+                sessUniqueUnitID = [ sessUniqueUnitID;  table(PhysChanNum, UnitNum, DeviceNum, CombinedNum, {ChanUnitName}, {NSxChanName}, {NSxFileName}, {NSPsuffix}, {ChanNameNew}, 'VariableNames', sessUniqueUnitID_varNames)];
+                
+                
+                % check if this channel needs to be added to jackTableUsed
+                
+                if first_channel_unit
+                   jackTableUsed = [ jackTableUsed ; used_jacksheet(iChan,:) ];
+                   first_channel_unit = 0;
                 end
                 
-                noiseInfo.metrics.pair_overlap{noise_units_added} = overlap_struct;
                 
-            end
-            
-            noise_units_added = noise_units_added + 1;
-        
-        else %it is a unit then
-            
-            filt_unit_ID = filter_dmat{iUnit, filt_unitID_col};
-                        
-            spikeInfo_filt.timeStamp{filt_units_added}         = spikeInfo.timeStamp{iUnit};
-            spikeInfo_filt.waveForm{filt_units_added}          = spikeInfo.waveForm{iUnit};
-            
-            spikeInfo_filt.uniqueUnitID{filt_units_added}             = filt_unit_ID;
-            
-            spikeInfo_filt.metrics.dur_sec(filt_units_added)           = spikeInfo.metrics.dur_sec(iUnit);
-            spikeInfo_filt.metrics.firing_rate(filt_units_added)       = spikeInfo.metrics.firing_rate(iUnit);
-            spikeInfo_filt.metrics.num_events(filt_units_added)        = spikeInfo.metrics.num_events(iUnit);
-            spikeInfo_filt.metrics.t1_sec(filt_units_added)            = spikeInfo.metrics.t1_sec(iUnit);
-            spikeInfo_filt.metrics.t2_sec(filt_units_added)            = spikeInfo.metrics.t2_sec(iUnit);
-            
-            %find the new name for the bursting parent
-            %should return one index
-            if ~isequal(spikeInfo.metrics.bursting_parent{iUnit}, 0)
-                burst_parent_idx = cellfun(@(x) isequal(x, spikeInfo.metrics.bursting_parent{iUnit}), spikeInfo.uniqueUnitID);
-                spikeInfo_filt.metrics.bursting_parent{filt_units_added}   = filter_dmat{burst_parent_idx, filt_unitID_col};
-            else
-                spikeInfo_filt.metrics.bursting_parent{filt_units_added} = 0;
-            end
-            
-            spikeInfo_filt.metrics.isolation(filt_units_added)         = spikeInfo.metrics.isolation(iUnit);
-            spikeInfo_filt.metrics.noise_overlap(filt_units_added)     = spikeInfo.metrics.noise_overlap(iUnit);
-            spikeInfo_filt.metrics.peak_amp(filt_units_added)          = spikeInfo.metrics.peak_amp(iUnit);
-            spikeInfo_filt.metrics.peak_noise(filt_units_added)        = spikeInfo.metrics.peak_noise(iUnit);
-            spikeInfo_filt.metrics.peak_snr(filt_units_added)          = spikeInfo.metrics.peak_snr(iUnit);
-
-            current_unit_pair_overlap = spikeInfo.metrics.pair_overlap{iUnit};
-            
-            if isempty(current_unit_pair_overlap.pair)
+                % store unit timestamps, converted to milliseconds
                 
-                spikeInfo_filt.metrics.pair_overlap{filt_units_added}      = current_unit_pair_overlap;
-            else    
+                firings_filt = (loaded_chan(iChan).firings(3,:) == unit_firings_name);
                 
-                overlap_struct = struct;
-                overlap_struct.pair = cell(length(current_unit_pair_overlap.pair),1);
-                overlap_struct.overlap = current_unit_pair_overlap.overlap;
-                               
-                for ov = 1:length(current_unit_pair_overlap.pair)
-                    
-                    ov_split = strsplit(current_unit_pair_overlap.pair{ov}, ',');
-                    
-                    el1 = ov_split{1};
-                    el2 = ov_split{2};
-                                        
-                    el1_idx = cellfun(@(x) isequal(x, el1), spikeInfo.uniqueUnitID);
-                    el2_idx = cellfun(@(x) isequal(x, el2), spikeInfo.uniqueUnitID);
-                    
-                    renamed_el1 = filter_dmat{el1_idx, filt_unitID_col};
-                    renamed_el2 = filter_dmat{el2_idx, filt_unitID_col};
-                    
-                    ov_unsplit = [renamed_el1 ',' renamed_el2];
-                                        
-                    overlap_struct.pair{ov} = ov_unsplit;
-                    
+                        % increment unit spikes counter for this channel
+                        num_channel_unit_spikes = num_channel_unit_spikes + sum(firings_filt);
+                      
+                unit_timeStamp_ms = loaded_chan(iChan).firings(2,firings_filt) ./ sampFreq2MS_factor;
+                timeStamp{num_total_units_added, 1} = unit_timeStamp_ms;
+                
+                
+                
+                % store waveForms
+                
+                clip_size = size( loaded_chan(iChan).clips_spike , 2);
+                clip_midpoint = ceil(clip_size/2);
+                
+                clip_timeMS = ((1:clip_size) - clip_midpoint) ./ sampFreq2MS_factor;
+                clip_timeMS_boundsFilt = (clip_timeMS >= clip_timeMS_leftBound) & (clip_timeMS <= clip_timeMS_rightBound);
+                
+                
+                % first "spike" waveForms
+                
+                waveForm_all{num_total_units_added, 1} = loaded_chan(iChan).clips_spike(firings_filt, clip_timeMS_boundsFilt);
+                
+                waveForm.timeMS = clip_timeMS(clip_timeMS_boundsFilt);
+                waveForm.mean = mean(waveForm_all{num_total_units_added, 1}, 1);
+                waveForm.sd = std(waveForm_all{num_total_units_added, 1}, 0, 1);
+                
+                
+                % raw waveForms
+                
+                waveForm_raw_all{num_total_units_added, 1} = loaded_chan(iChan).clips_raw(firings_filt, clip_timeMS_boundsFilt);
+                
+                waveForm_raw.timeMS = clip_timeMS(clip_timeMS_boundsFilt);
+                waveForm_raw.mean = mean(waveForm_raw_all{num_total_units_added, 1}, 1);
+                waveForm_raw.sd = std(waveForm_raw_all{num_total_units_added, 1}, 0, 1);
+                
+                
+                % sorted waveForms
+                
+                waveForm_sort_all{num_total_units_added, 1} = loaded_chan(iChan).clips_whiten(firings_filt, clip_timeMS_boundsFilt);
+                
+                waveForm_sort.timeMS = clip_timeMS(clip_timeMS_boundsFilt);
+                waveForm_sort.mean = mean(waveForm_sort_all{num_total_units_added, 1}, 1);
+                waveForm_sort.sd = std(waveForm_sort_all{num_total_units_added, 1}, 0, 1);
+                
+                
+                % add ISI and spikerate metrics to struct
+                
+                unit_ISI = diff(unit_timeStamp_ms);
+                metrics.fracISIbelowThr(num_total_units_added) = sum(unit_ISI < 2) / length(unit_timeStamp_ms) ;
+                
+                
+                ms_per_min = 1000 * 60;
+                unit_timeStamp_min = unit_timeStamp_ms ./ ms_per_min ;
+                max_whole_min = max(floor(unit_timeStamp_min));
+                
+                spkRate_eachMinute = [];
+                
+                for iMin = 0:max_whole_min
+                    spkRate_eachMinute(iMin + 1) = sum((unit_timeStamp_min >= iMin) & (unit_timeStamp_min < (iMin+1))) / 60; % convert to spikes/sec
                 end
                 
-                spikeInfo_filt.metrics.pair_overlap{filt_units_added} = overlap_struct;
+                metrics.spkRate_eachMinute{num_total_units_added} = spkRate_eachMinute;
+                
+                
+
+                % add pre-calculated unit metrics to struct
+
+                metrics.mountainsort.noise_overlap(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.noise_overlap;
+                metrics.mountainsort.peak_amp(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_amp;
+                metrics.mountainsort.peak_noise(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_noise;
+                metrics.mountainsort.peak_snr(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_snr;
+
+
+
+                % remember this unit passed the filter
+                
+                selected_units_mountainsort_ID(num_channel_units_added) = unit_firings_name;
+                selected_units_combinedNum(num_channel_units_added) = CombinedNum;
+                selected_units_total_count_inx(num_channel_units_added) = num_total_units_added;
+                
                 
             end
             
-            
-            filt_units_added = filt_units_added + 1;
+        end
+        
+        if num_channel_units_added > 0
+        
+            % store extract info string after all units on this channel have been filtered
+            extractInfoStr = { extractInfoStr ;  used_jacksheet{iChan, 'ChanName'}{1} ' --> ' num2str(num_channel_units_added) ' units, ' num2str(num_channel_unit_spikes) ' total spikes' };
+
+        end
+        
+        
+        % add in pairwise isolation scores for units passing the filter
+        
+        if num_channel_units_added > 1
+           keyboard; 
         end
         
     end
 
 end
+
+
+function loaded_chan = load_chan_dirs(channel_dirs, split_path, parser)
+
+    split_fname_suffix = parser.Results.split_fname_suffix;
+    firings_fname = parser.Results.firings_fname;
+    metrics_fname = parser.Results.metrics_fname;
+    isol_metrics_fname = parser.Results.isol_metrics_fname;
+    isol_pair_metrics_fname = parser.Results.isol_pair_metrics_fname;
+    clip_features_fname = parser.Results.clip_features_fname;
+    clips_raw_fname = parser.Results.clips_raw_fname;
+    clips_spike_fname = parser.Results.clips_spike_fname;
+    clips_whiten_fname = parser.Results.clips_whiten_fname;
+
+    num_channels = length(channel_dirs);
+
+    loaded_chan = struct;
+    
+    for iChan = 1:num_channels
+
+        fprintf('loading %s\n', channel_dirs{iChan});
+
+        channel_dir = [ split_path '/' channel_dirs{iChan} ];
+
+        hp_reref_whiten_fpath = [ channel_dir '/' channel_dirs{iChan} '.' split_fname_suffix];
+        hp_reref_fpath = [ split_path '/../splits_spike/' channel_dirs{iChan} '/' channel_dirs{iChan} '.' split_fname_suffix];
+        lp_reref_fpath = [ split_path '/../splits_raw/' channel_dirs{iChan} '/' channel_dirs{iChan} '.' split_fname_suffix];
+
+        firings_fpath = [channel_dir '/' firings_fname];
+        firings = readmda(firings_fpath);
+
+        metrics_fpath = [channel_dir '/' metrics_fname];
+        metrics = readjson(metrics_fpath);
+
+        isol_metrics_fpath = [channel_dir '/' isol_metrics_fname];
+        isol_metrics = readjson(isol_metrics_fpath);
+
+        isol_pair_metrics_fpath = [channel_dir '/' isol_pair_metrics_fname];
+        isol_pair_metrics = readjson(isol_pair_metrics_fpath);
+
+        clips_raw_fpath = [channel_dir '/' clips_raw_fname];
+        clips_raw = squeeze(readmda(clips_raw_fpath))';
+
+        clips_spike_fpath = [channel_dir '/' clips_spike_fname];
+        clips_spike = squeeze(readmda(clips_spike_fpath))';
+
+        clips_whiten_fpath = [channel_dir '/' clips_whiten_fname];
+        clips_whiten = squeeze(readmda(clips_whiten_fpath))';
+
+        clip_features_fpath = [channel_dir '/' clip_features_fname];
+
+        loaded_chan(iChan).chan_dir = channel_dir;
+        loaded_chan(iChan).firings = firings;
+        loaded_chan(iChan).clips_raw = clips_raw;
+        loaded_chan(iChan).clips_spike = clips_spike;
+        loaded_chan(iChan).clips_whiten = clips_whiten;
+        loaded_chan(iChan).metrics = metrics;
+        loaded_chan(iChan).isol_metrics = isol_metrics;
+        loaded_chan(iChan).isol_pair_metrics = isol_pair_metrics;
+        loaded_chan(iChan).clips_whiten_features_fpath = clip_features_fpath;
+        loaded_chan(iChan).lp_reref_fpath = lp_reref_fpath;
+        loaded_chan(iChan).hp_reref_fpath = hp_reref_fpath;
+        loaded_chan(iChan).hp_reref_whiten_fpath = hp_reref_whiten_fpath;
+        
+    end
+
+end
+
 
 function jsonstring = readjson(fname)
 

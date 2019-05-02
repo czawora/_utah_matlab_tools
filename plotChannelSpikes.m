@@ -1,18 +1,7 @@
 function plotChannelSpikes(varargin)
 
       fprintf('starting plotChannelSpikes %s\n', datetime('now'));
-      %echo plotChannelSpikes on;
-%     plotChannelSpikes('session_name', 'test', ...
-%     'channel_num', '59', ...
-%     'clip_features', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/clip_features.mda', ...
-%     'clips', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/clips.mda', ...
-%     'firings','/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/firings.mda', ...
-%     'isol_metrics', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/isol_metrics.json', ...
-%     'isol_pair_metrics', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/isol_pair_metrics.json', ...
-%     'metrics','/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/metrics.json', ...
-%     'mda', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/NIH037_160123-2355_160124-0054_17_bp.mda', ...
-%     'saveDir', '/Users/zaworaca/dev/biowulf/pipeline_test/NIH037_160123-2355_160124-0054_17/sortFigs');
-    %/data/zaworaca/data/NIH037/NIH037_160206_2134_utah_m/NIH037_160206-2134_160206-2233_59
+
         %INPUTS
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,15 +12,23 @@ function plotChannelSpikes(varargin)
         p = inputParser;
         
         p.addParameter('session_name', '', @ischar);
-        p.addParameter('channel_num', '', @ischar);
+        p.addParameter('channel_name', '', @ischar);
         
-        p.addParameter('clip_features', '', @ischar);
-        p.addParameter('clips', '', @ischar);
-        p.addParameter('firings', '', @ischar);
-        p.addParameter('isol_metrics', '', @ischar);
-        p.addParameter('isol_pair_metrics', '', @ischar);
-        p.addParameter('metrics', '', @ischar);
-        p.addParameter('mda', '', @ischar);
+        p.addParameter('clip_features_fpath', '', @ischar);
+        p.addParameter('clips_fpath', '', @ischar);
+        p.addParameter('firings_fpath', '', @ischar);
+        p.addParameter('isol_metrics_fpath', '', @ischar);
+        p.addParameter('isol_pair_metrics_fpath', '', @ischar);
+        p.addParameter('metrics_fpath', '', @ischar);
+        p.addParameter('mda_fpath', '', @ischar);
+        
+        p.addParameter('clip_features', []);
+        p.addParameter('clips', []);
+        p.addParameter('firings', []);
+        p.addParameter('isol_metrics', []);
+        p.addParameter('isol_pair_metrics', []);
+        p.addParameter('metrics', []);
+        p.addParameter('mda', []);
         
         p.addParameter('saveDir', '', @ischar);
         
@@ -44,7 +41,7 @@ function plotChannelSpikes(varargin)
         parse(p, varargin{:});
         
         session_name = p.Results.session_name;
-        current_chan = p.Results.channel_num;
+        current_chan_underscore = p.Results.channel_name;
         
         snr_filt = str2num(p.Results.snr_min);
         iso_filt = str2num(p.Results.iso_min);
@@ -52,60 +49,99 @@ function plotChannelSpikes(varargin)
         
         removeLargeAmpUnits = str2num(p.Results.removeLargeAmpUnits);
         
-        clip_features_fname = p.Results.clip_features ;
-        clips_fname = p.Results.clips ;
-        firings_fname = p.Results.firings ;
-        isol_metrics_fname = p.Results.isol_metrics ;
-        isol_pair_metrics_fname = p.Results.isol_pair_metrics ;
-        metrics_fname = p.Results.metrics ;
-        mda_fname = p.Results.mda ;
+        clip_features_fpath = p.Results.clip_features_fpath ;
+        clips_fpath = p.Results.clips_fpath ;
+        firings_fpath = p.Results.firings_fpath ;
+        isol_metrics_fpath = p.Results.isol_metrics_fpath ;
+        isol_pair_metrics_fpath = p.Results.isol_pair_metrics_fpath ;
+        metrics_fpath = p.Results.metrics_fpath ;
+        mda_fpath = p.Results.mda_fpath ;
+
+        clip_features = p.Results.clip_features ;
+        clips = p.Results.clips ;
+        firings = p.Results.firings ;
+        isol_metrics = p.Results.isol_metrics ;
+        isol_pair_metrics = p.Results.isol_pair_metrics ;
+        metrics = p.Results.metrics ;
+        mda = p.Results.mda ;
         
         saveDir = p.Results.saveDir;
         
         session_name_underscore = session_name;
         session_name = strrep(session_name, '_', ' ');
         
-        if ~exist(clip_features_fname, 'file')
-           error('%s is not a valid file', clip_features_fname);
-        end
+        current_chan = strrep(current_chan_underscore, '_', ' ');
+        
+        if isempty(clip_features)
+        
+            if ~exist(clip_features_fpath, 'file')
+               error('%s is not a valid file', clip_features_fpath);
+            end
 
-        clip_features = readmda(clip_features_fname)';
-        
-        if ~exist(clips_fname, 'file')
-           error('%s is not a valid file', clips_fname);
+            clip_features = readmda(clip_features_fpath)';
         end
         
-        clips = squeeze(readmda(clips_fname))';
-        
-        if ~exist(firings_fname, 'file')
-           error('%s is not a valid file', firings_fname);
+        if isempty(clips)
+
+            if ~exist(clips_fpath, 'file')
+               error('%s is not a valid file', clips_fpath);
+            end
+
+            clips = squeeze(readmda(clips_fpath))';
+
         end
         
-        firings = readmda(firings_fname);
+        if isempty(firings)
         
-        if ~exist(isol_metrics_fname, 'file')
-           error('%s is not a valid file', isol_metrics_fname);
+            if ~exist(firings_fpath, 'file')
+               error('%s is not a valid file', firings_fpath);
+            end
+
+            firings = readmda(firings_fpath);
+        
         end
         
-        isol_metrics = readjson(isol_metrics_fname);
+        if isempty(isol_metrics)
         
-        if ~exist(isol_pair_metrics_fname, 'file')
-           error('%s is not a valid file', isol_pair_metrics_fname);
+            if ~exist(isol_metrics_fname, 'file')
+               error('%s is not a valid file', isol_metrics_fpath);
+            end
+
+            isol_metrics = readjson(isol_metrics_fpath);
+
         end
         
-        isol_pair_metrics = readjson(isol_pair_metrics_fname);
-        
-        if ~exist(metrics_fname, 'file')
-           error('%s is not a valid file', metrics_fname);
+        if length(isol_metrics) > 1
+            if isempty(isol_pair_metrics)
+
+                if ~exist(isol_pair_metrics_fpath, 'file')
+                   error('%s is not a valid file', isol_pair_metrics_fpath);
+                end
+
+                isol_pair_metrics = readjson(isol_pair_metrics_fpath);
+
+            end
         end
         
-        metrics = readjson(metrics_fname);
+        if isempty(metrics)
         
-        if ~exist(mda_fname, 'file')
-           error('%s is not a valid file', mda_fname);
+            if ~exist(metrics_fpath, 'file')
+               error('%s is not a valid file', metrics_fpath);
+            end
+
+            metrics = readjson(metrics_fpath);
+        
         end
         
-        mda = readmda(mda_fname);
+        if isempty(mda)
+        
+            if ~exist(mda_fpath, 'file')
+               error('%s is not a valid file', mda_fpath);
+            end
+
+            mda = readmda(mda_fpath);
+        
+        end
         
         if ~exist(saveDir, 'dir')
             mkdir(saveDir);
@@ -116,6 +152,7 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         example_clip_size = samplingRateHz * 3; %3 seconds of data
         num_example_clips = 2;
         
@@ -167,26 +204,6 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % compute 1 sec stdev with 50% overlap for length of data
-        
-%         mda_std = [];
-%         
-%         front_idx = 1;
-%         step_size = samplingRateHz/2;
-%         
-%         while (front_idx + samplingRateHz) < length_mda
-%            
-%             current_std = std( mda(front_idx:(front_idx + samplingRateHz)) );
-%                 
-%             mda_std( length(mda_std) + 1 ) = current_std;
-%             
-%             front_idx = front_idx + step_size;
-%         end
-%         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
         
         total_unit_num = max(firings(3,:));
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1337,6 +1354,8 @@ function plotChannelSpikes(varargin)
         xticks(current_plot, tickspots_index);
         xticklabels(current_plot, ticklabels);
         
+        ylim(quantile(mda,[0.00001 0.99999]));
+        
         xlabel(current_plot, 'time (min)');
         ylabel(current_plot, 'ungained voltage');
         
@@ -1357,7 +1376,7 @@ function plotChannelSpikes(varargin)
         set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
         fprintf('save fig %s\n', datetime('now'));
 
-        print(gcf,[saveDir '/' session_name_underscore '_' current_chan '.png'],'-dpng','-r300');
+        print(gcf,[saveDir '/' session_name_underscore '_' current_chan_underscore '.png'],'-dpng','-r300');
         
         %export_fig([ms_figDir '/' session_name_no_spaces '_' current_chan '.bmp'], '-bmp', '-painters');
         fprintf('\t-- saving\n');

@@ -52,6 +52,24 @@ function splitmda(varargin)
         writemda(mda(iChan,:), channel_output_fname);
     end
     
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % calculate some variance stats
+    
+    output_var_stats_fpath = [ output_dir '/var_stats.mat'];
+    
+    chan_var = var(mda, 0, 2);
+    chan_rms = rms(mda, 2);
+    
+    chan_var_stats = struct;
+    chan_var_stats.chan_var = chan_var;
+    chan_var_stats.chan_rms = chan_rms;
+    
+    save(output_var_stats_fpath, 'chan_var_stats');
+        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
     fprintf('done\n');
 
 end
