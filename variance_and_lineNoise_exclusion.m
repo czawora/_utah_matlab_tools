@@ -152,7 +152,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         current_processed = processed( current_reference_match , :);
         current_chan_inds = 1:size(current_processed, 1);
-        current_chan_names = used_jacksheet{current_reference_match, 'ChanName'}{1};
+        current_chan_names = used_jacksheet{current_reference_match, 'ChanName'};
         
         refset_savedir = [save_dir sprintf('microDev%d', current_reference_num) '/'];
         
@@ -263,20 +263,18 @@ function variance_and_lineNoise_exclusion(varargin)
     %extract start time from jacksheet
     dateInfo_column = 'FileName';
     old_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d_\d\d\d\d', 'match');
-    old_fmt_match = old_fmt_regex_match{1};
     
     new_fmt_regex_match = regexp( used_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d\d\d-\d\d\d\d\d\d', 'match');
-    new_fmt_match = new_fmt_regex_match{1};
     
-    if isempty(old_fmt_match) && isempty(new_fmt_match)
+    if isempty(old_fmt_regex_match) && isempty(new_fmt_regex_match)
         
         error('no old or new format datestring found in used_jacksheet{1, "FileName"}');
-    elseif ~isempty(old_fmt_match)
+    elseif ~isempty(old_fmt_regex_match)
         
-        startTime_datenum = datenum(old_fmt_match, 'yymmdd_HHMM');
-    elseif ~isempty(new_fmt_match)
+        startTime_datenum = datenum(old_fmt_regex_match{1}, 'yymmdd_HHMM');
+    elseif ~isempty(new_fmt_regex_match)
         
-        startTime_datenum = datenum(new_fmt_match, 'yyyymmdd-HHMMSS');
+        startTime_datenum = datenum(new_fmt_regex_match{1}, 'yyyymmdd-HHMMSS');
     end
         
     
