@@ -151,21 +151,20 @@ pulses = getBlackrockPulses_DC_AN('ns3_fpath', analog_pulse_fpath, 'nev_fpath', 
 
 dateInfo_column = 'FileName';
 old_fmt_regex_match = regexp( split_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d_\d\d\d\d', 'match');
-old_fmt_match = old_fmt_regex_match{1};
 
 new_fmt_regex_match = regexp( split_jacksheet{1, dateInfo_column}{1} , '\d\d\d\d\d\d\d\d-\d\d\d\d\d\d', 'match');
-new_fmt_match = new_fmt_regex_match{1};
 
-if isempty(old_fmt_match) && isempty(new_fmt_match)
+if isempty(old_fmt_regex_match) && isempty(new_fmt_regex_match)
 
     error('no old or new format datestring found in used_jacksheet{1, "FileName"}');
-elseif ~isempty(old_fmt_match)
+elseif ~isempty(old_fmt_regex_match)
 
-    startTime_datenum = datenum(old_fmt_match, 'yymmdd_HHMM');
-elseif ~isempty(new_fmt_match)
+    startTime_datenum = datenum(old_fmt_regex_match{1}, 'yymmdd_HHMM');
+elseif ~isempty(new_fmt_regex_match)
 
-    startTime_datenum = datenum(new_fmt_match, 'yyyymmdd-HHMMSS');
+    startTime_datenum = datenum(new_fmt_regex_match{1}, 'yyyymmdd-HHMMSS');
 end
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,6 +242,12 @@ save(saveDir_spikeWaves, '-v7.3', 'spikeWaveform');
 saveDir_sortSummary = [saveRoot '/' session_start_time_str '_' split_jacksheet{1, 'NSPsuffix'}{1} '_sortSummary.csv'];
 writetable(sessUnitSummary, saveDir_sortSummary);
 
+fprintf('deleting split files\n');
+
+rmdir(split_path);
+rmdir([split_path '/../split_raw']);
+rmdir([split_path '/../split_sort']);
+
 
 fprintf('construct_spikeInfoMS -- done\n');
 
@@ -316,12 +321,12 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     metrics.spkRate_eachMinute = {};
 
     metrics.mountainsort = struct;
-    metrics.mountainsort.isolation = [];
+%     metrics.mountainsort.isolation = [];
     metrics.mountainsort.noise_overlap = [];
     metrics.mountainsort.peak_amp = [];
     metrics.mountainsort.peak_noise = [];
     metrics.mountainsort.peak_snr = [];
-    metrics.mountainsort.pair_overlap = [];
+%     metrics.mountainsort.pair_overlap = [];
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -390,7 +395,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 % check if this channel needs to be added to jackTableUsed
                 
                 if first_channel_unit
-                   jackTableUsed = [ jackTableUsed ; used_jacksheet(iChan,:) ];
+                   jackTableUsed = [ jackTableUsed ; split_jacksheet(iChan,:) ];
                    first_channel_unit = 0;
                 end
                 
@@ -488,7 +493,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         if num_channel_units_added > 0
         
             % store extract info string after all units on this channel have been filtered
-            extractInfoStr{length(extractInfoStr) + 1, 1} = [ used_jacksheet{iChan, 'ChanName'}{1} ' --> ' num2str(num_channel_units_added) ' units, ' num2str(num_channel_unit_spikes) ' total spikes' ];
+            extractInfoStr{length(extractInfoStr) + 1, 1} = [ split_jacksheet{iChan, 'ChanName'}{1} ' --> ' num2str(num_channel_units_added) ' units, ' num2str(num_channel_unit_spikes) ' total spikes' ];
 
         end
         

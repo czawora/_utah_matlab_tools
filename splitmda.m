@@ -56,7 +56,7 @@ function splitmda(varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % calculate some variance stats
     
-    output_var_stats_fpath = [ output_dir '/var_stats.mat'];
+    output_var_stats_fpath = [ output_dir sprintf('/var_stats_%d.mat', refset)];
     
     chan_var = var(mda, 0, 2);
     chan_rms = rms(mda, 2);

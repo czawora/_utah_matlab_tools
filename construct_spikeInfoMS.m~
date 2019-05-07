@@ -196,6 +196,8 @@ spikeInfo.jackTableUsed = jackTableUsed;
 spikeInfo.sortNoteTable = {};
 spikeInfo.physio_nsx_postProc = {split_jacksheet{1, 'NSPsuffix'}{1} split_jacksheet{1, 'FileName'}{1} nsx_postProc};
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %now we can allocate the spikeWaveform struct
 
@@ -240,6 +242,12 @@ save(saveDir_spikeWaves, '-v7.3', 'spikeWaveform');
 
 saveDir_sortSummary = [saveRoot '/' session_start_time_str '_' split_jacksheet{1, 'NSPsuffix'}{1} '_sortSummary.csv'];
 writetable(sessUnitSummary, saveDir_sortSummary);
+
+fprintf('deleting split files\n');
+
+rmdir(split_path);
+rmdir([split_path '/../split_raw']);
+rmdir([split_path '/../split_sort']);
 
 
 fprintf('construct_spikeInfoMS -- done\n');
@@ -314,12 +322,12 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     metrics.spkRate_eachMinute = {};
 
     metrics.mountainsort = struct;
-    metrics.mountainsort.isolation = [];
+%     metrics.mountainsort.isolation = [];
     metrics.mountainsort.noise_overlap = [];
     metrics.mountainsort.peak_amp = [];
     metrics.mountainsort.peak_noise = [];
     metrics.mountainsort.peak_snr = [];
-    metrics.mountainsort.pair_overlap = [];
+%     metrics.mountainsort.pair_overlap = [];
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
