@@ -137,8 +137,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % filter the units on the loaded channels
 
-[sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet);
+[sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, aux ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet);
 
+if aux.multi_unit_channel_present           
+    aux_fid = fopen([saveRoot '/multi_channels.txt'], 'w');    
+    fclose(aux_fid);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get the pulses
@@ -255,7 +259,7 @@ fprintf('construct_spikeInfoMS -- done\n');
 end
 
 
-function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
+function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics , aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
     
     if removeLargeAmpUnits 
         amp_thresh = 5000;
@@ -328,6 +332,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     metrics.mountainsort.peak_snr = [];
 %     metrics.mountainsort.pair_overlap = [];
     
+    aux = struct;
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     num_channels = length(loaded_chan);
@@ -499,11 +505,10 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         
         
         % add in pairwise isolation scores for units passing the filter
-        
+       
         if num_channel_units_added > 1
-           keyboard; 
-        end
-        
+            aux.multi_unit_channel_present = 1;           
+        end 
     end
 
 end
