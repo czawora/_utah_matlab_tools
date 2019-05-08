@@ -333,7 +333,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
 %     metrics.mountainsort.pair_overlap = [];
     
     aux = struct;
-
+    aux.multi_unit_channel_present = 0;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     num_channels = length(loaded_chan);
