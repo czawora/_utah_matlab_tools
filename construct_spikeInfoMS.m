@@ -279,7 +279,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
     sessUniqueUnitID = table([], [], [], [], [], [], [], [], [], 'VariableNames', sessUniqueUnitID_varNames);
 
-    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames);
+    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames);
 
     timeStamp = {};
     extractInfoStr = {};
