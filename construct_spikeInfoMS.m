@@ -250,7 +250,7 @@ fprintf('deleting split files\n');
 
 rmdir(split_path, 's');
 rmdir([session_path '/splits_raw'], 's');
-rmdir([session_path '/splits_sort'], 's');
+rmdir([session_path '/splits_spike'], 's');
 
 
 fprintf('construct_spikeInfoMS -- done\n');
