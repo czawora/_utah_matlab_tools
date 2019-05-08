@@ -249,8 +249,8 @@ writetable(sessUnitSummary, saveDir_sortSummary);
 fprintf('deleting split files\n');
 
 rmdir(split_path, 's');
-rmdir([split_path '/../split_raw'], 's');
-rmdir([split_path '/../split_sort'], 's');
+rmdir([split_path '/../splits_raw'], 's');
+rmdir([split_path '/../splits_sort'], 's');
 
 
 fprintf('construct_spikeInfoMS -- done\n');
