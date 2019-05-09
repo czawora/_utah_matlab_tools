@@ -88,7 +88,7 @@ session_start_time_str = strjoin(session_name_splits(1:2), '_');
 filtered_channel_ls = cellfun( @(f) ...
                                 length(f) >= 3 ... %make sure its not a hidden file
                                 && exist([split_path '/' f], 'dir') ... %make sure its a directory
-                                && exist([split_path '/' f '/done.log'], 'file') ... %make sure there is a ms output file present, although this does not gauruntee that ms ran successfully
+                                && exist([split_path '/' f '/done.log'], 'file') ... %make sure there is a done.log file
                                 , split_path_ls_names);
                
 %sort channel directories                            
@@ -213,26 +213,31 @@ spikeWaveform.waveForm_raw_all = waveForm_raw_all;
 spikeWaveform.waveForm_sort_all = waveForm_sort_all;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% add aux struct
 
+chan_var = [];
+chan_rms = [];
 
-% 
-% traceFigs_saveRoot = [saveRoot '/traceFigs'];
-% if ~exist(traceFigs_saveRoot, 'dir')
-%     mkdir(traceFigs_saveRoot);
-% end
-% 
-% %plot the quantile stat figs
-% for iRefset = 1:num_refsets
-%     
-% %    raw_quantile_mat_fpath = [ saveRoot sprintf('/../raw_quantiles.refset%d.mat', iRefset) ];
-% %    bandpass_quantile_mat_fpath = [ saveRoot sprintf('/../bandpass_quantiles.refset%d.mat', iRefset) ];
-%    reref_quantile_mat_fpath = [ saveRoot sprintf('/../reref_quantiles.refset%d.mat', iRefset) ];
-% %    whiten_quantile_mat_fpath = [ saveRoot sprintf('/../whiten_quantiles.refset%d.mat', iRefset) ];
-% 
-%    quantile_save_root = [traceFigs_saveRoot '/' sess];  
-%     
-%    plotWindowStats('', '', reref_quantile_mat_fpath, '', quantile_save_root);
-% end
+unique_refsets = unique(split_jacksheet{:, 'MicroDevNum'});
+
+for iRefset = 1:length(unique_refsets)
+    
+    refset = unique_refsets(iRefset);
+    var_stats_fpath = [ split_path sprintf('/var_stats_%d.mat', refset) ];
+
+    chan_var_stats = load(var_stats_fpath);
+    chan_var_stats = chan_var_stats.chan_var_stats;
+    
+    chan_var = [ chan_var ; chan_var_stats.chan_var ];
+    chan_rms = [ chan_rms ; chan_var_stats.chan_rms ];
+    
+end
+
+spikeInfo.aux = aux;
+spikeInfo.aux.chan_var = chan_var;
+spikeInfo.aux.chan_rms = chan_rms;
+
 
 
 % save 

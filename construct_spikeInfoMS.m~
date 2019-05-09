@@ -88,7 +88,7 @@ session_start_time_str = strjoin(session_name_splits(1:2), '_');
 filtered_channel_ls = cellfun( @(f) ...
                                 length(f) >= 3 ... %make sure its not a hidden file
                                 && exist([split_path '/' f], 'dir') ... %make sure its a directory
-                                && exist([split_path '/' f '/done.log'], 'file') ... %make sure there is a ms output file present, although this does not gauruntee that ms ran successfully
+                                && exist([split_path '/' f '/done.log'], 'file') ... %make sure there is a done.log file
                                 , split_path_ls_names);
                
 %sort channel directories                            
@@ -141,7 +141,7 @@ end
 
 if aux.multi_unit_channel_present           
     aux_fid = fopen([saveRoot '/multi_channels.txt'], 'w');    
-    fclose()
+    fclose(aux_fid);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,26 +213,14 @@ spikeWaveform.waveForm_raw_all = waveForm_raw_all;
 spikeWaveform.waveForm_sort_all = waveForm_sort_all;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% add aux struct
 
+chan_var = [];
+chan_rms = [];
 
-% 
-% traceFigs_saveRoot = [saveRoot '/traceFigs'];
-% if ~exist(traceFigs_saveRoot, 'dir')
-%     mkdir(traceFigs_saveRoot);
-% end
-% 
-% %plot the quantile stat figs
-% for iRefset = 1:num_refsets
-%     
-% %    raw_quantile_mat_fpath = [ saveRoot sprintf('/../raw_quantiles.refset%d.mat', iRefset) ];
-% %    bandpass_quantile_mat_fpath = [ saveRoot sprintf('/../bandpass_quantiles.refset%d.mat', iRefset) ];
-%    reref_quantile_mat_fpath = [ saveRoot sprintf('/../reref_quantiles.refset%d.mat', iRefset) ];
-% %    whiten_quantile_mat_fpath = [ saveRoot sprintf('/../whiten_quantiles.refset%d.mat', iRefset) ];
-% 
-%    quantile_save_root = [traceFigs_saveRoot '/' sess];  
-%     
-%    plotWindowStats('', '', reref_quantile_mat_fpath, '', quantile_save_root);
-% end
+var_stats_path = [ split_path sprintf('/var_stats_%d.mat', refset) ];
+
 
 
 % save 
@@ -248,9 +236,9 @@ writetable(sessUnitSummary, saveDir_sortSummary);
 
 fprintf('deleting split files\n');
 
-rmdir(split_path);
-rmdir([split_path '/../split_raw']);
-rmdir([split_path '/../split_sort']);
+rmdir(split_path, 's');
+rmdir([session_path '/splits_raw'], 's');
+rmdir([session_path '/splits_spike'], 's');
 
 
 fprintf('construct_spikeInfoMS -- done\n');
@@ -279,7 +267,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
     sessUniqueUnitID = table([], [], [], [], [], [], [], [], [], 'VariableNames', sessUniqueUnitID_varNames);
 
-    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames);
+    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames);
 
     timeStamp = {};
     extractInfoStr = {};
@@ -333,7 +321,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
 %     metrics.mountainsort.pair_overlap = [];
     
     aux = struct;
-
+    aux.multi_unit_channel_present = 0;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     num_channels = length(loaded_chan);
