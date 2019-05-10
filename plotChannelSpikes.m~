@@ -1438,7 +1438,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
              ax.YAxis.Exponent = expon;
 
              hold off;
-             current_plot = subplot(display_rows, display_cols, mini_col_count + display_cols ,'replace');
+             current_plot = subplot(display_rows, display_cols, (mini_col_count + display_cols * floor(mini_col_count/display_cols)) + display_cols ,'replace');
              hold on;
 
              %fprintf('making hist for noise %d at plot point %d\n', n, (mini_col_count + display_cols * floor(mini_col_count/display_cols)) + display_cols);
