@@ -1496,7 +1496,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
 
              %histogram of spike times ISI for this unit
              hold off;
-             current_plot = subplot(display_rows, display_cols,  mini_col_count + display_cols * floor((mini_col_count-1)/display_cols) ,'replace');
+             current_plot = subplot(display_rows, display_cols,  mini_col_count ,'replace');
              %fprintf('making hist for unit %d at plot point %d\n', u,  mini_col_count + display_cols * floor((mini_col_count-1)/display_cols));
              hold on;
 
@@ -1521,7 +1521,7 @@ function plotUnitHist(noise_units, good_units, unit_colors, firings, unit_hist_w
              %then cdf of ISI for this unit
 
              hold off;
-             current_plot = subplot(display_rows, display_cols, (mini_col_count + display_cols * floor((mini_col_count-1)/display_cols)) + display_cols ,'replace');
+             current_plot = subplot(display_rows, display_cols, mini_col_count + display_cols ,'replace');
              hold on;
 
              %fprintf('making hist for unit %d at plot point %d\n', u, (mini_col_count + display_cols * floor((mini_col_count-1)/display_cols)) + display_cols);
