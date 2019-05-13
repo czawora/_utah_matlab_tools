@@ -43,6 +43,8 @@ function plotChannelSpikes(varargin)
         
         parse(p, varargin{:});
         
+        disp(p.Results);
+        
         session_name = p.Results.session_name;
         current_chan_underscore = p.Results.channel_name;
         
@@ -72,6 +74,7 @@ function plotChannelSpikes(varargin)
         good_units_filt = p.Results.good_units_filt;
         
         saveDir = p.Results.saveDir;
+                
         
         session_name_underscore = session_name;
         session_name = strrep(session_name, '_', ' ');
@@ -186,9 +189,9 @@ function plotChannelSpikes(varargin)
 
             clip_count = min_point;
 
-            while () < max_point
+            while (clip_count + example_clip_size -1) < max_point
 
-                fprintf('from %d to %d\n', clip_count, clip_count + example_clip_size);
+%                 fprintf('from %d to %d\n', clip_count, clip_count + example_clip_size);
 
                 spikes_in_range = sum(...
                     (firings(2,:) > clip_count)...
@@ -228,7 +231,7 @@ function plotChannelSpikes(varargin)
             if good_units_filt(iFilt)
                
                 good_units(length(good_units) + 1) = unique_units(iFilt);
-                good_units_names{length(good_units_names) + 1} = unit_names{iFilt};
+                good_units_names{length(good_units_names) + 1} = unit_names{length(good_units)};
             else
                 
                 noise_units(length(noise_units) + 1) = unique_units(iFilt);
@@ -237,7 +240,7 @@ function plotChannelSpikes(varargin)
             
         end
         
-        total_unit_num = legnth(unique_units);
+        total_unit_num = length(unique_units);
        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %plotting settings and layout

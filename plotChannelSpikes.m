@@ -231,7 +231,7 @@ function plotChannelSpikes(varargin)
             if good_units_filt(iFilt)
                
                 good_units(length(good_units) + 1) = unique_units(iFilt);
-                good_units_names{length(good_units_names) + 1} = unit_names{iFilt};
+                good_units_names{length(good_units_names) + 1} = unit_names{length(good_units) + 1};
             else
                 
                 noise_units(length(noise_units) + 1) = unique_units(iFilt);
