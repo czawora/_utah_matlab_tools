@@ -219,7 +219,24 @@ spikeWaveform.waveForm_sort_all = waveForm_sort_all;
 chan_var = [];
 chan_rms = [];
 
-var_stats_path = [ split_path sprintf('/var_stats_%d.mat', refset) ];
+unique_refsets = unique(split_jacksheet{:, 'MicroDevNum'});
+
+for iRefset = 1:length(unique_refsets)
+    
+    refset = unique_refsets(iRefset);
+    var_stats_fpath = [ split_path sprintf('/var_stats_%d.mat', refset) ];
+
+    chan_var_stats = load(var_stats_fpath);
+    chan_var_stats = chan_var_stats.chan_var_stats;
+    
+    chan_var = [ chan_var ; chan_var_stats.chan_var ];
+    chan_rms = [ chan_rms ; chan_var_stats.chan_rms ];
+    
+end
+
+spikeInfo.aux = aux;
+spikeInfo.aux.chan_var = chan_var;
+spikeInfo.aux.chan_rms = chan_rms;
 
 
 
@@ -247,7 +264,7 @@ fprintf('construct_spikeInfoMS -- done\n');
 end
 
 
-function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics , aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
+function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, plotChannelSpike_map, aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
     
     if removeLargeAmpUnits 
         amp_thresh = 5000;

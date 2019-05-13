@@ -30,6 +30,9 @@ function plotChannelSpikes(varargin)
         p.addParameter('metrics', []);
         p.addParameter('mda', []);
         
+        p.addParameter('unit_names', {});
+        p.addParameter('good_units_filt', [])
+        
         p.addParameter('saveDir', '', @ischar);
         
         p.addParameter('removeLargeAmpUnits', '1', @ischar);
@@ -64,6 +67,9 @@ function plotChannelSpikes(varargin)
         isol_pair_metrics = p.Results.isol_pair_metrics ;
         metrics = p.Results.metrics ;
         mda = p.Results.mda ;
+        
+        unit_names = p.Results.unit_names;
+        good_units_filt = p.Results.good_units_filt;
         
         saveDir = p.Results.saveDir;
         
@@ -103,7 +109,7 @@ function plotChannelSpikes(varargin)
         
         if isempty(isol_metrics)
         
-            if ~exist(isol_metrics_fname, 'file')
+            if ~exist(isol_metrics_fpath, 'file')
                error('%s is not a valid file', isol_metrics_fpath);
             end
 
@@ -146,8 +152,12 @@ function plotChannelSpikes(varargin)
         if ~exist(saveDir, 'dir')
             mkdir(saveDir);
         end
+   
         
-        [firings, metrics, isol_metrics, isol_pair_metrics] = relabelUnits(firings, metrics, isol_metrics, isol_pair_metrics);
+        if length(good_units_filt) ~= length(unique(firings(3,:)))
+           error('length(good_units_filt) ~= length(unique(firings(3,:)))'); 
+        end
+        
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,9 +186,9 @@ function plotChannelSpikes(varargin)
 
             clip_count = min_point;
 
-            while clip_count < max_point
+            while (clip_count + example_clip_size -1) < max_point
 
-                %fprintf('from %d to %d\n', bp_clip_count, bp_clip_count + BP_clip_size);
+%                 fprintf('from %d to %d\n', clip_count, clip_count + example_clip_size);
 
                 spikes_in_range = sum(...
                     (firings(2,:) > clip_count)...
@@ -205,36 +215,30 @@ function plotChannelSpikes(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        total_unit_num = max(firings(3,:));
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %filter units into units and noise
-        
-        if removeLargeAmpUnits == 1
-           
-            largeAmp = 5000;
-        else
-            
-            largeAmp = Inf;
-        end
+        unique_units = unique(firings(3,:));
         
         good_units = [];
+        good_units_names = {};
+
         noise_units = [];
+        noise_units_names = {};
         
-        for iUnit = 1:total_unit_num
+        for iFilt = 1:length(unique_units)
            
-            noise_overlap = isol_metrics.clusters(iUnit).metrics.noise_overlap;
-            snr = isol_metrics.clusters(iUnit).metrics.peak_snr;
-            amp = isol_metrics.clusters(iUnit).metrics.peak_amp;
-            
-            if noise_overlap > over_filt || snr < snr_filt || amp > largeAmp
+            if good_units_filt(iFilt)
                
-                noise_units(length(noise_units) + 1) = iUnit;
+                good_units(length(good_units) + 1) = unique_units(iFilt);
+                good_units_names{length(good_units_names) + 1} = unit_names{iFilt};
             else
-                good_units(length(good_units) + 1) = iUnit;
+                
+                noise_units(length(noise_units) + 1) = unique_units(iFilt);
+                noise_units_names{length(noise_units_names) + 1} = ['noise' num2str(length(noise_units_names) + 1)];
             end
- 
+            
         end
         
+        total_unit_num = length(unique_units);
+       
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %plotting settings and layout
         num_unique_colors = total_unit_num;
@@ -394,7 +398,7 @@ function plotChannelSpikes(varargin)
                 l = line( 1:1:length(avg_wf) , avg_wf);
                 set(l, 'Color', 'k');
 
-                legend_cell{length(legend_cell) + 1} = ['noise ' num2str(n) ' ( ' nz_markers( mod(n, length(nz_markers)) ) ' )'];
+                legend_cell{length(legend_cell) + 1} = [noise_units_names{n} ' ( ' nz_markers( mod(n, length(nz_markers)) ) ' )'];
                 legend_handles(length(legend_handles) + 1) = l;
 
             end
@@ -441,7 +445,7 @@ function plotChannelSpikes(varargin)
                 l = line( 1:size(clips,2) , avg_wf);
                 set(l, 'Color', u_color);
 
-                legend_cell{length(legend_cell) + 1} = ['unit ' num2str(u)];
+                legend_cell{length(legend_cell) + 1} = good_units_names{u};
                 legend_handles(length(legend_handles) + 1) = l;
 
                 %fprintf('\t-- plotting\n');

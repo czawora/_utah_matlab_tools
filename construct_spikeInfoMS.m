@@ -108,6 +108,17 @@ loaded_chan = load_chan_dirs(channel_dirs, split_path, p);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% filter the units on the loaded channels
+
+[sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, plotChannelSpike_map, aux ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet);
+
+if aux.multi_unit_channel_present           
+    aux_fid = fopen([saveRoot '/multi_channels.txt'], 'w');    
+    fclose(aux_fid);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the channel fig
 
 if ~skip_plots
@@ -116,6 +127,7 @@ if ~skip_plots
 
     for iChan = 1:num_channels
 
+        
         chan_name = split_jacksheet{iChan, 'ChanName'}{1};
         sortfigs_saveRoot = [saveRoot '/sortFigs'];
 
@@ -128,21 +140,14 @@ if ~skip_plots
                           'isol_pair_metrics', loaded_chan(iChan).isol_pair_metrics, ...
                           'metrics', loaded_chan(iChan).metrics, ...
                           'mda_fpath', loaded_chan(iChan).hp_reref_whiten_fpath, ...
-                          'saveDir', sortfigs_saveRoot);
+                          'saveDir', sortfigs_saveRoot, ...
+                          'unit_names', plotChannelSpike_map(iChan).unit_names, ...
+                          'good_units_filt', plotChannelSpike_map(iChan).good_units);
 
     end
 
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% filter the units on the loaded channels
-
-[sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, aux ] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet);
-
-if aux.multi_unit_channel_present           
-    aux_fid = fopen([saveRoot '/multi_channels.txt'], 'w');    
-    fclose(aux_fid);
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get the pulses
@@ -264,7 +269,7 @@ fprintf('construct_spikeInfoMS -- done\n');
 end
 
 
-function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics , aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
+function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, plotChannelSpike_map, aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
     
     if removeLargeAmpUnits 
         amp_thresh = 5000;
@@ -340,6 +345,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     aux = struct;
     aux.multi_unit_channel_present = 0;
     
+    plotChannelSpike_map = struct;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     num_channels = length(loaded_chan);
@@ -367,6 +374,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         
         first_channel_unit = 1;
         
+        good_units = [];
+        
         
         for iUnit = 1:num_units
             
@@ -381,6 +390,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             unit_noise_overlap = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.noise_overlap;
             
             if (unit_snr >= snr_min) && (unit_noise_overlap <= noise_overlap_max) && (unit_amp < amp_thresh)
+                
+                good_units = [good_units 1];
                 
                 % increment unit counter for this channel
                 num_channel_units_added = num_channel_units_added + 1;
@@ -497,6 +508,9 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 selected_units_combinedNum(num_channel_units_added) = CombinedNum;
                 selected_units_total_count_inx(num_channel_units_added) = num_total_units_added;
                 
+            else
+                
+                good_units = [good_units 0];
                 
             end
             
@@ -508,6 +522,10 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             extractInfoStr{length(extractInfoStr) + 1, 1} = [ split_jacksheet{iChan, 'ChanName'}{1} ' --> ' num2str(num_channel_units_added) ' units, ' num2str(num_channel_unit_spikes) ' total spikes' ];
 
         end
+        
+        
+        plotChannelSpike_map(iChan).unit_names = sessUniqueUnitID{:, 'ChanUnitName'};
+        plotChannelSpike_map(iChan).good_units = good_units;
         
         
         % add in pairwise isolation scores for units passing the filter
