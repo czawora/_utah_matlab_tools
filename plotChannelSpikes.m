@@ -43,6 +43,8 @@ function plotChannelSpikes(varargin)
         
         parse(p, varargin{:});
         
+        disp(p.Results);
+        
         session_name = p.Results.session_name;
         current_chan_underscore = p.Results.channel_name;
         
@@ -72,6 +74,7 @@ function plotChannelSpikes(varargin)
         good_units_filt = p.Results.good_units_filt;
         
         saveDir = p.Results.saveDir;
+                
         
         session_name_underscore = session_name;
         session_name = strrep(session_name, '_', ' ');
