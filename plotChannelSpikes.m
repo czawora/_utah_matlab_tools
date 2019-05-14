@@ -30,8 +30,8 @@ function plotChannelSpikes(varargin)
         p.addParameter('metrics', []);
         p.addParameter('mda', []);
         
-        p.addParameter('unit_names', {});
-        p.addParameter('good_units_filt', [])
+        p.addParameter('unit_names_fpath', '');
+        p.addParameter('good_units_fpath', '')
         
         p.addParameter('saveDir', '', @ischar);
         
@@ -70,8 +70,8 @@ function plotChannelSpikes(varargin)
         metrics = p.Results.metrics ;
         mda = p.Results.mda ;
         
-        unit_names = p.Results.unit_names;
-        good_units_filt = p.Results.good_units_filt;
+        unit_names_fpath = p.Results.unit_names_fpath;
+        good_units_fpath = p.Results.good_units_fpath;
         
         saveDir = p.Results.saveDir;
                 
@@ -156,6 +156,18 @@ function plotChannelSpikes(varargin)
             mkdir(saveDir);
         end
    
+        
+        if ~exist(good_units_fpath, 'file')
+           error('%s is not a valid file', good_units_fpath);
+        end
+    
+        load(good_units_fpath);
+        
+        if ~exist(unit_names_fpath, 'file')
+           error('%s is not a valid file', unit_names_fpath);
+        end
+    
+        load(unit_names_fpath);
         
         if length(good_units_filt) ~= length(unique(firings(3,:)))
            error('length(good_units_filt) ~= length(unique(firings(3,:)))'); 
