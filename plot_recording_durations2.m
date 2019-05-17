@@ -1,6 +1,6 @@
 
-rerun = 1;
-
+rerun = 0;
+save_fpath = '/Users/zaworaca/Dropbox/biowulf_weeds/_sync_folders/_utah_matlab_tools/subj_min_coverage.mat';
 % paths = { '/Volumes/72A/UTAH_A/NIH029' };
 
 paths = { ...
@@ -174,7 +174,91 @@ paths = { ...
 
      end
 
-     save('/Users/zaworaca/Dropbox/biowulf_weeds/_sync_folders/_utah_matlab_tools/subj_min_coverage.mat', 'subj_dur_min', 'subj_min_coverage', 'subj_min_coverage_microDevNum');
+     save(save_fpath, 'paths', 'subj_dur_min', 'subj_min_coverage', 'subj_min_coverage_microDevNum');
  
+ else
+     
+     load(save_fpath);
+     
+     num_colors = 10;
+     colors = distinguishable_colors(num_colors, {'w'});
+     
+     figure();
+     set(gcf,'color','w');
+     set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.01, 0.01, 1, 0.96]);
+     
+     minute_vals = 1:size(subj_min_coverage{1}, 2);
+     
+     yticklabels_cell = {};
+     yicks_mat = [];
+     
+     plotted_count = 0;
+     
+     for iSubj = 1:length(paths)
+         
+         paths_splits = strsplit(paths{iSubj}, '/');
+         subj_name = paths_splits{end};
+                  
+         % plot the device durations
+         
+         current_subj_dur_min = subj_dur_min{iSubj};
+         
+         current_subj_min_coverage = subj_min_coverage{iSubj};
+         current_subj_min_coverage_microDevNum = subj_min_coverage_microDevNum{iSubj};
+         
+         if isempty(current_subj_min_coverage)
+            fprintf('skipping %s\n', subj_name);
+            continue; 
+         end
+         
+         plotted_count = plotted_count + 1;
+         current_subj_min_coverage(current_subj_min_coverage(:) == 1) = plotted_count;
+         current_subj_min_coverage(current_subj_min_coverage(:) == 0) = NaN;
+         
+         for iDev = 1:length(current_subj_min_coverage_microDevNum)
+         
+            if iDev == 1
+                yticklabels_cell{length(yticklabels_cell) + 1} = [sprintf('%0.2f days', max(current_subj_dur_min)/min_per_day) '   ' subj_name];
+            else
+                yticklabels_cell{length(yticklabels_cell) + 1} = '';
+            end
+            
+            yicks_mat(length(yicks_mat) + 1) = max(current_subj_min_coverage(iDev,:)) - ((iDev-1)*0.25);
+
+            plot(minute_vals, current_subj_min_coverage(iDev,:) - ((iDev-1)*0.25), 'Color', colors(current_subj_min_coverage_microDevNum(iDev), :), 'LineWidth', 7);
+            hold on;
+         
+         end
+         
+     end
+     
+     [sorted_yticks_mat, sorted_idx] = sort(yicks_mat);
+     
+     yticks(sorted_yticks_mat);
+     yticklabels(yticklabels_cell(sorted_idx));
+     
+     ylim([0 plotted_count+1]);
+     
+     xticks(0:min_per_day:total_min);
+     xticklabels(strsplit(num2str(1:(total_min/min_per_day)), ' '));
+     
+     xlabel('time (days)');
+     
+     set(gca, 'FontSize', 20);
+     
+     figure();
+     set(gcf,'color','w');
+
+     for iColor = 1:num_colors
+        plot(1:10, repmat(iColor, 10, 1), 'Color', colors(iColor,:), 'LineWidth', 7);
+        hold on;
+     end
+     
+     title('microDevNum');
+     xticklabels({});
+     
+     set(gca, 'FontSize', 14);
  end 
       
+ 
+ 
