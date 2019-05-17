@@ -537,8 +537,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         unit_names = sessUniqueUnitID{:, 'ChanUnitName'};
         good_units_filt = good_units;
         
-        save([chan_dir '/good_units.mat'], 'good_units_filt');
-        save([chan_dir '/unit_names.mat'], 'unit_names');
+        save([loaded_chan(iChan).chan_dir '/good_units.mat'], 'good_units_filt');
+        save([loaded_chan(iChan).chan_dir '/unit_names.mat'], 'unit_names');
         
     end
 
