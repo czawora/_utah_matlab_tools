@@ -187,6 +187,8 @@ paths = { ...
      set(gcf,'color','w');
      set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.01, 0.01, 1, 0.96]);
      
+     subplot(6,6,[1:5 7:11 13:17 19:23 25:29 31:35]);
+     
      minute_vals = 1:size(subj_min_coverage{1}, 2);
      
      yticklabels_cell = {};
@@ -245,9 +247,11 @@ paths = { ...
      xlabel('time (days)');
      
      set(gca, 'FontSize', 20);
-     
-     figure();
-     set(gcf,'color','w');
+
+     subplot(6,6,[6 12 18]);
+
+%      figure();
+%      set(gcf,'color','w');
 
      for iColor = 1:num_colors
         plot(1:10, repmat(iColor, 10, 1), 'Color', colors(iColor,:), 'LineWidth', 7);
@@ -257,7 +261,7 @@ paths = { ...
      title('microDevNum');
      xticklabels({});
      
-     set(gca, 'FontSize', 14);
+     %set(gca, 'FontSize', 14);
  end 
       
  

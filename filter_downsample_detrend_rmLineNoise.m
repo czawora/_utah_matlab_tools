@@ -111,10 +111,10 @@ function filter_downsample_detrend_rmLineNoise(varargin)
     [detrended_noLineNoise, ~, ~, ~] = rmlinesmovingwinc(detrended , t_params , 10, line_params, [], 'n', line_freqs);
     
     fprintf('length(detrended_noLineNoise): %d NaNs: %d\n', length(detrended_noLineNoise), sum(isnan(detrended_noLineNoise)));
-    
-    %set the NaNs
-    
-    detrended_noLineNoise(set2nan) = NaN;
+%     
+%     %set the NaNs
+%     
+%     detrended_noLineNoise(set2nan) = NaN;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %save out
@@ -123,7 +123,7 @@ function filter_downsample_detrend_rmLineNoise(varargin)
     samplingFreq = downsample_freq;
     
     fprintf('save mat file\n');    
-    save( mat_save_fpath , '-v7.3', 'noreref', 'detrended_noLineNoise', 'samplingFreq' , 'channel_name');
+    save( mat_save_fpath , '-v7.3', 'noreref', 'detrended_noLineNoise', 'samplingFreq' , 'channel_name', 'set2nan');
     delete(channel_fpath);
 end
 

@@ -79,6 +79,7 @@ function variance_and_lineNoise_exclusion(varargin)
     
     noreref = zeros( length(channel_fnames), num_timepoints);
     processed = zeros( length(channel_fnames), num_timepoints);
+    nan_mask = false( length(channel_fnames), num_timepoints );
         
     loaded_samplingFreqs = zeros(1, length(channel_fnames));
     
@@ -105,6 +106,7 @@ function variance_and_lineNoise_exclusion(varargin)
         noreref(match2jacksheet, :) = temp_struct.noreref;
         processed(match2jacksheet, :) = temp_struct.detrended_noLineNoise;
         loaded_samplingFreqs(match2jacksheet) = temp_struct.samplingFreq;
+        nan_mask(match2jacksheet, :) = logical(temp_struct.set2nan);
         
         clear('temp_struct');
     
@@ -151,6 +153,8 @@ function variance_and_lineNoise_exclusion(varargin)
         current_reference_match = (used_jacksheet{:, 'MicroDevNum'} == current_reference_num);
         
         current_processed = processed( current_reference_match , :);
+        current_processed(nan_mask(current_reference_match, :)) = NaN;
+        
         current_chan_inds = 1:size(current_processed, 1);
         current_chan_names = used_jacksheet{current_reference_match, 'ChanName'};
         
@@ -162,7 +166,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         plotNaN(current_chan_names, current_processed, samplingFreq, refset_savedir);
         
-        perc_nan = sum(isnan(current_processed(:))) / ((size(current_processed, 1) * size(current_processed, 2)));
+        perc_nan = sum(isnan(current_nan_mask(:))) / ((size(current_nan_mask, 1) * size(current_nan_mask, 2)));
         
         % check if all values are NaN, meaning the entire array is flat the whole session (coded as > 99% NaN)
         if perc_nan >= 0.99
@@ -303,7 +307,8 @@ function variance_and_lineNoise_exclusion(varargin)
               '     physio_nsx_postProc  - (a #nsp x 3) cell with "nspSuffix" "nsxFilename" and struct with info on how the original nsx file was modified using concatOpenNSx' ];
           
 
-    lfp = {int16(noreref)};  
+    lfp = {noreref};  
+    nan_mask = {nan_mask};
     rerefType = 'lfp_noreref';
           
     
@@ -331,13 +336,14 @@ function variance_and_lineNoise_exclusion(varargin)
     save([save_dir sessStr '_noreref.mat'],  '-v7.3', 'lfpStruct');    
     
 
-    lfp = {int16(processed)};
+    lfp = {processed};
     rerefType = 'lfp_processed';
 
     readme = ['this lfp.mat file, generated ' sprintf('%s', createdDate) ', contains the following fields:' newline newline ...
           '     createdDate          - a string indicating when this mat file was created' newline ...
           '     chanIDperNSP         - a ( #NSPs used x 1 ) cell array. Each enty is a table corresponding to the channel data in lfp' newline ...
           '     lfp                  - a ( #NSPs used x 1 ) cell array. Each cell entry is #channels x #time points matrix (int16). Time point dimension might be slightly different prior to NSP alignment' newline ...
+          '     nan_mask             - a ( #NSPs used x 1 ) cell array. Each cell entry is #channels x #time points matrix (logical) indicating where "saturation" NaNs should be applied to corresponding lfp matrix' newline ...
           '     glob_sig_all         - 1-d cell array containing a global mean using all channels from a device. Index this array using MicroDevNum from the jacksheet' newline ...
           '     glob_sig_good        - 1-d cell array containing a global mean using only channels from a device that pass an amplitude and variance quality filter (see variance.csv). Index this array using MicroDevNum from the jacksheet' newline ... 
           '     rerefType            - a string indicating either "lfp_noreref" or "lfp_processed"' newline ...
@@ -359,6 +365,7 @@ function variance_and_lineNoise_exclusion(varargin)
     lfpStruct.createdDate = createdDate;
     lfpStruct.chanIDperNSP = chanIDperNSP;
     lfpStruct.lfp = lfp;
+    lfpStruct.nan_mask = nan_mask;
     lfpStruct.glob_sig_all = glob_sig_all;
     lfpStruct.glob_sig_good = glob_sig_good;
     lfpStruct.rerefType = rerefType;
@@ -367,8 +374,7 @@ function variance_and_lineNoise_exclusion(varargin)
     lfpStruct.filterSettings = ['LFP Band: butterworth low pass at 500 Hz; filtfilt for zero phase shift (effective order 4)' newline ...
                                 ' + downsampled to lfpStruct.samplingFreq ' newline ...
                                 ' + detrended with locdetrend ' newline ...
-                                ' + line noise removed with rmlinesmovingwinc ' newline ...
-                                ' + constant voltage > 10 ms set to NaN'];
+                                ' + line noise removed with rmlinesmovingwinc '];
     lfpStruct.sessStr = sessStr;
     lfpStruct.sessDurMin = sessDurMin;
     lfpStruct.pulses = pulses;

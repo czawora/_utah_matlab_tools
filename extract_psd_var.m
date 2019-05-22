@@ -41,6 +41,27 @@ noreref_fpath = [sess_path '/raw/' sess_time_str '_noreref.mat'];
 lfpStruct = load(noreref_fpath);
 lfpStruct = lfpStruct.lfpStruct;
 
+% load processed
+
+processed_fpath = [sess_path '/raw/' sess_time_str '_processed.mat'];
+processed = load(processed_fpath);
+processed = processed.lfpStruct;
+
+% count NaNs on each device
+
+frac_nan = [];
+unique_microDevNums = unique(processed.chanIDperNSP{1}{:, 'MicroDevNum'});
+
+for iDev = 1:length(unique_microDevNums)
+
+    current_dev = unique_microDevNums(iDev);
+    current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
+    current_dev_data = processed.lfp{1}(current_dev_filt, :);
+    current_dev_data_frac_nan = sum(current_dev_data(:) == 0)/(size(current_dev_data, 1)*size(current_dev_data, 2));
+    
+    frac_nan(iDev) = current_dev_data_frac_nan;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % find intervals
 
@@ -87,9 +108,10 @@ end
 
 createdDate = datestr(datetime('now'));
 
-noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', contains the following fields:' newline newline ...
+noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', contains the following fields:' newline ...
           '     createdDate          - a string indicating when this mat file was created' newline ...
           '     chanID               - a table corresponding to the channel data in psd, var, and rms' newline ...
+          '     frac_nan             - vector with value for each microDevNum (indexed in sorted order) indicating the fraction of NaNs found in processed.mat' newline ...
           '     psd                  - a (chan x timepoint x freq) matrix with power values in decibels at each time window (described by timepoints min and window_min), calculated with pwelch' newline ...
           '     var                  - a (chan x timepoint x subwindow) var(chan, timepoint, :) describes the distribution of variance values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
           '     rms                  - a (chan x timepoint x subwindow) rms(chan, timepoint, :) describes the distribution of rms values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
@@ -108,6 +130,7 @@ psdStruct = struct;
 psdStruct.readme = noreref_readme;
 psdStruct.createdDate = createdDate;
 psdStruct.chanID = lfpStruct.chanIDperNSP{1};
+psdStruct.frac_nan = frac_nan;
 psdStruct.psd = noreref_psd;
 psdStruct.var = noreref_var;
 psdStruct.rms = noreref_rms;

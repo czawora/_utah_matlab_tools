@@ -180,11 +180,14 @@ paths = { ...
      
      load(save_fpath);
      
-     colors = distinguishable_colors(10, {'w'});
+     num_colors = 10;
+     colors = distinguishable_colors(num_colors, {'w'});
      
      figure();
      set(gcf,'color','w');
      set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.01, 0.01, 1, 0.96]);
+     
+     subplot(6,6,[1:5 7:11 13:17 19:23 25:29 31:35]);
      
      minute_vals = 1:size(subj_min_coverage{1}, 2);
      
@@ -206,6 +209,7 @@ paths = { ...
          current_subj_min_coverage_microDevNum = subj_min_coverage_microDevNum{iSubj};
          
          if isempty(current_subj_min_coverage)
+            fprintf('skipping %s\n', subj_name);
             continue; 
          end
          
@@ -216,9 +220,9 @@ paths = { ...
          for iDev = 1:length(current_subj_min_coverage_microDevNum)
          
             if iDev == 1
-                yticklabels_cell{iSubj} = [sprintf('%0.2f days', max(current_subj_dur_min)/min_per_day) '   ' subj_name];
+                yticklabels_cell{length(yticklabels_cell) + 1} = [sprintf('%0.2f days', max(current_subj_dur_min)/min_per_day) '   ' subj_name];
             else
-                x = 0;
+                yticklabels_cell{length(yticklabels_cell) + 1} = '';
             end
             
             yicks_mat(length(yicks_mat) + 1) = max(current_subj_min_coverage(iDev,:)) - ((iDev-1)*0.25);
@@ -230,11 +234,34 @@ paths = { ...
          
      end
      
-     sorted_yticks_mat = sort(sort(yicks_mat)
+     [sorted_yticks_mat, sorted_idx] = sort(yicks_mat);
      
-     yticks(sort(yicks_mat));
-     yticklabels(yticklabels_cell);
-     ylim([0 plotted_count + 1]);
+     yticks(sorted_yticks_mat);
+     yticklabels(yticklabels_cell(sorted_idx));
+     
+     ylim([0 plotted_count+1]);
+     
+     xticks(0:min_per_day:total_min);
+     xticklabels(strsplit(num2str(1:(total_min/min_per_day)), ' '));
+     
+     xlabel('time (days)');
+     
+     set(gca, 'FontSize', 20);
+
+     subplot(6,6,[1:5 7:11 13:17 19:23 25:29 31:35]);
+
+%      figure();
+%      set(gcf,'color','w');
+
+     for iColor = 1:num_colors
+        plot(1:10, repmat(iColor, 10, 1), 'Color', colors(iColor,:), 'LineWidth', 7);
+        hold on;
+     end
+     
+     title('microDevNum');
+     xticklabels({});
+     
+     set(gca, 'FontSize', 14);
  end 
       
  
