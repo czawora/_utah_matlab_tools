@@ -166,7 +166,7 @@ function variance_and_lineNoise_exclusion(varargin)
         
         plotNaN(current_chan_names, current_processed, samplingFreq, refset_savedir);
         
-        perc_nan = sum(isnan(current_nan_mask(:))) / ((size(current_nan_mask, 1) * size(current_nan_mask, 2)));
+        perc_nan = sum(isnan(current_processed(:))) / ((size(current_processed, 1) * size(current_processed, 2)));
         
         % check if all values are NaN, meaning the entire array is flat the whole session (coded as > 99% NaN)
         if perc_nan >= 0.99
