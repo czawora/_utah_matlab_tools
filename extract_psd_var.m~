@@ -170,7 +170,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate variance for intervals
 
-[noreref_var, noreref_rms, interval_frac_nan] = extract_var(lfp, samples_intervals, lfpStruct.samplingFreq, microDevFilts, nan_mask);
+[noreref_var, noreref_rms, interval_nan_frac] = extract_var(lfp, samples_intervals, lfpStruct.samplingFreq, microDevFilts, nan_mask);
 
 createdDate = datestr(datetime('now'));
 
@@ -199,7 +199,7 @@ psdStruct.readme = noreref_readme;
 psdStruct.createdDate = createdDate;
 psdStruct.chanID = lfpStruct.chanIDperNSP{1};
 psdStruct.frac_nan = frac_nan;
-psdStruct.interval_frac_nan = interval_frac_nan;
+psdStruct.interval_nan_frac = interval_nan_frac;
 psdStruct.psd = noreref_psd;
 psdStruct.var = noreref_var;
 psdStruct.rms = noreref_rms;
@@ -250,7 +250,6 @@ for iDevNum = 1:length(num_unique_microDevNum)
         subplot(subplot_rows, subplot_cols, iTime);
 
         current_psd = squeeze(psdStruct.psd(current_microDevNum_filt, iTime, :));
-        current_timepoint_frac_nan = psdStruct.interval_frac_nan(iDevNum, iTime);
 
         plot(psdStruct.freqs, current_psd);
 
@@ -261,7 +260,7 @@ for iDevNum = 1:length(num_unique_microDevNum)
             ylabel('power (decibels)');
         end
 
-        title(sprintf('minute %0.2f (frac nan %0.2f)', psdStruct.timepoints_min(iTime), current_timepoint_frac_nan));
+        title(sprintf('minute %0.2f', psdStruct.timepoints_min(iTime) ));
 
     end
 
