@@ -117,6 +117,8 @@ timepoints_daily_window = [];
 samples_interval_starts = [];
 samples_interval_stops = [];
 
+samples_captured = 0;
+
 % which windows are present in this session?
 
 minWindowCoverage = 0.95; % a window must have 95% coverage from the data in this session to be considered as filled
@@ -135,6 +137,8 @@ for iWin = 1:length(window_start_times_samples)
     if sum(current_window_filt)/samples_per_window >= minWindowCoverage
        %found a window!
        
+       samples_captured = samples_captured + sum(current_window_filt);
+       
        current_window_start_hours = current_window_start/(samples_per_min * 60);
        current_window_start_hour_mark = floor(current_window_start_hours);
        current_window_start_min_mark = round(60 * (current_window_start_hours - current_window_start_hour_mark));
@@ -152,6 +156,7 @@ for iWin = 1:length(window_start_times_samples)
     
 end
 
+frac_samples_covered = samples_captured/lfp_sample_num;
 
 samples_intervals = [samples_interval_starts' samples_interval_stops'];
 samples_intervals_midpoints = samples_interval_starts + samples_per_window/2;
@@ -186,6 +191,8 @@ noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', 
           '     timepoints_samples       - a vector with timepoints (in unit samples) corresponding the center of each time window used in psd, var, and rms' newline ...
           '     timepoints_min           - a vector with timepoints (in unit minutes) corresponding the center of each time window used in psd, var, and rms' newline ...
           '     timepoints_daily_window  - a vector with timepoints (in minutes) corresponding to the beginning of each window calculated since the beginning of the day (daily windows calculated 0:window_min:minutes_per_day)' newline ...
+          '     frac_samples_covered     - fraction of samples in the lfp matrix that were used with the specfied window_min' newline ...
+          '     minWindowCoverage        - minimum fraction of the daily window that must be present in the data for the data to count towards that window' newline ...
           '     window_min               - the number of minutes of data used for each time window. Windows are non-overlapping' newline ...
           '     sessDurMin               - session duration in minutes' newline ...
           '     sessStr                  - the session name the lfps were extracted from (e.g., 190117_1336)' newline ...
@@ -208,6 +215,8 @@ psdStruct.timepoints_samples = samples_intervals_midpoints;
 psdStruct.timepoints_min = round(samples_intervals_midpoints ./ samples_per_min, 2);
 psdStruct.timepoints_daily_window = timepoints_daily_window;
 psdStruct.window_min = min_per_window;
+psdStruct.frac_samples_covered = frac_samples_covered;
+psdStruct.minWindowCoverage = minWindowCoverage;
 psdStruct.sessDurMin = lfpStruct.sessDurMin;
 psdStruct.sessStr = lfpStruct.sessStr;
 psdStruct.samplingFreq = lfpStruct.samplingFreq;
