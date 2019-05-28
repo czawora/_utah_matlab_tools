@@ -136,7 +136,7 @@ for iWin = 1:length(window_start_times_samples)
     
     if sum(current_window_filt)/samples_per_window >= minWindowCoverage
        %found a window!
-       
+              
        samples_captured = samples_captured + sum(current_window_filt);
        
        current_window_start_hours = current_window_start/(samples_per_min * 60);
@@ -157,6 +157,13 @@ for iWin = 1:length(window_start_times_samples)
 end
 
 frac_samples_covered = samples_captured/lfp_sample_num;
+
+if samples_captured == 0
+    ignore_fid = fopen([psd_path '/_ignore_me.txt'], 'w');
+    fprintf(ignore_fid, 'no daily time windows reach %0.2f percent coverage in this session\n', minWindowCoverage);
+    fclose(ignore_fid);
+    return;
+end
 
 samples_intervals = [samples_interval_starts' samples_interval_stops'];
 samples_intervals_midpoints = samples_interval_starts + samples_per_window/2;
