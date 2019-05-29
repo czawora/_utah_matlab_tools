@@ -121,21 +121,23 @@ if iscell(nsx_data.Data)
                         
                     end
                     
-                    current_fillerSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1;
-                    current_fillerSegConcatIdx_end = current_fillerSegConcatIdx_start + size(samplesToInsert, 2);
-                    nsx_data.postProc.fillerSegConcatIdx = [nsx_data.postProc.fillerSegConcatIdx; current_fillerSegConcatIdx_start current_fillerSegConcatIdx_end];
+                    current_
+                    
+                                nsx_data.postProc.fillerSegConcatIdx = [];
 
                     
                     current_nonJunkSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1 + size(samplesToInsert, 2) + 1;
-                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2);
+                    current_nonJunkSegConcatIdx_end = size(nsx_data.Data{1}, 2) + 1 + size(samplesToInsert, 2) + 1 + size(nsx_data.Data{2}, 2);
                     nsx_data.postProc.nonJunkSegConcatIdx = [nsx_data.postProc.nonJunkSegConcatIdx ; current_nonJunkSegConcatIdx_start current_nonJunkSegConcatIdx_end];
+                    
+                    
                     
                     nsx_data.Data{1} = horzcat(nsx_data.Data{1},samplesToInsert,nsx_data.Data{2});
                     
                 else
                     
                     current_nonJunkSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1;
-                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2);
+                    current_nonJunkSegConcatIdx_end = size(nsx_data.Data{1}, 2) + 1 + size(nsx_data.Data{2}, 2);
                     nsx_data.postProc.nonJunkSegConcatIdx = [nsx_data.postProc.nonJunkSegConcatIdx ; current_nonJunkSegConcatIdx_start current_nonJunkSegConcatIdx_end];
                     
                     nsx_data.Data{1} = horzcat(nsx_data.Data{1},nsx_data.Data{2});
@@ -223,7 +225,7 @@ function samps = replicate_data(data_mat, numSamples)
         % if the data contains more than a single point, move an incrementer
         if size(data_mat, 2) > 1
 
-            if increment_idx == size(data_mat, 2) && incrementer == 1 %reached the end of the data while moving forward
+            if incremnet_idx == size(data_mat, 2) && incrementer == 1 %reached the end of the data while moving forward
 
                 % switch the incrementer direction
                 incrementer = -1;
