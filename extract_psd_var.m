@@ -54,7 +54,7 @@ lfpStruct = lfpStruct.lfpStruct;
 
 % load processed
 
-processed_fpath = [processed_ls.processed_ls '/' processed_ls.name];
+processed_fpath = [processed_ls.folder '/' processed_ls.name];
 processed = load(processed_fpath);
 processed = processed.lfpStruct;
 
