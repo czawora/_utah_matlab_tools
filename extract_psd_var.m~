@@ -29,27 +29,38 @@ if ~exist(psd_path, 'dir')
 end
 
 
-sess_dir_name = strsplit(sess_path, '/');
-sess_path_splits = strsplit(sess_dir_name{end}, '_');
-sess_time_str = strjoin(sess_path_splits(1:(end-1)), '_');
+% sess_dir_name = strsplit(sess_path, '/');
+% sess_path_splits = strsplit(sess_dir_name{end}, '_');
+% sess_time_str = strjoin(sess_path_splits(1:2), '_');
 % sess_time_str = [sess_path_splits{1} '_' sess_path_splits{2}];
+
+noreref_ls = dir([sess_path '/raw/*_noreref.mat']);
+processed_ls = dir([sess_path '/raw/*_processed.mat']);
+
+if isempty(noreref_ls)
+   error('command dir([sess_path "/raw/*_noreref.mat"]) found no results'); 
+end
+
+if isempty(processed_ls)
+   error('command dir([sess_path "/raw/*_processed.mat"]) found no results'); 
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load noreref
 
-noreref_fpath = [sess_path '/raw/' sess_time_str '_noreref.mat'];
+noreref_fpath = [noreref_ls.folder '/' noreref_ls.name];
 lfpStruct = load(noreref_fpath);
 lfpStruct = lfpStruct.lfpStruct;
 
 % load processed
 
-processed_fpath = [sess_path '/raw/' sess_time_str '_processed.mat'];
+processed_fpath = [processed_ls.processed_ls '/' processed_ls.name];
 processed = load(processed_fpath);
 processed = processed.lfpStruct;
 
 % count NaNs on each device
 
-NaN_value = 0;
+old_NaN_value = 0;
 
 frac_nan = [];
 unique_microDevNums = unique(processed.chanIDperNSP{1}{:, 'MicroDevNum'});
@@ -62,8 +73,15 @@ for iDev = 1:length(unique_microDevNums)
     
     microDevFilts = [ microDevFilts current_dev_filt ];
     
-    current_dev_data = processed.lfp{1}(current_dev_filt, :);
-    current_dev_data_frac_nan = sum(current_dev_data(:) == NaN_value)/(size(current_dev_data, 1)*size(current_dev_data, 2));
+    if ~isfield(processed, 'nan_mask')
+    
+        current_dev_data = processed.lfp{1}(current_dev_filt, :);
+        current_dev_data_frac_nan = sum(current_dev_data(:) == NaN_value)/(size(current_dev_data, 1)*size(current_dev_data, 2));
+        
+    else
+       
+        
+    end
     
     frac_nan(iDev) = current_dev_data_frac_nan;
 end
@@ -158,13 +176,14 @@ end
 
 frac_samples_covered = samples_captured/lfp_sample_num;
 
-samples_intervals = [samples_interval_starts' samples_interval_stops'];
-
 if samples_captured == 0
     ignore_fid = fopen([psd_path '/_ignore_me.txt'], 'w');
-    fprintf(ignore_fid, 'no daily time windows reach %0.2f % coverage in this session\n');
+    fprintf(ignore_fid, 'no daily time windows reach %0.2f percent coverage in this session\n', minWindowCoverage);
+    fclose(ignore_fid);
+    return;
 end
 
+samples_intervals = [samples_interval_starts' samples_interval_stops'];
 samples_intervals_midpoints = samples_interval_starts + samples_per_window/2;
 
 fprintf('sessDurMin: %0.2f\n', lfpStruct.sessDurMin);

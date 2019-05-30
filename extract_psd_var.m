@@ -29,27 +29,38 @@ if ~exist(psd_path, 'dir')
 end
 
 
-sess_dir_name = strsplit(sess_path, '/');
-sess_path_splits = strsplit(sess_dir_name{end}, '_');
-sess_time_str = strjoin(sess_path_splits(1:2), '_');
+% sess_dir_name = strsplit(sess_path, '/');
+% sess_path_splits = strsplit(sess_dir_name{end}, '_');
+% sess_time_str = strjoin(sess_path_splits(1:2), '_');
 % sess_time_str = [sess_path_splits{1} '_' sess_path_splits{2}];
+
+noreref_ls = dir([sess_path '/raw/*_noreref.mat']);
+processed_ls = dir([sess_path '/raw/*_processed.mat']);
+
+if isempty(noreref_ls)
+   error('command dir([sess_path "/raw/*_noreref.mat"]) found no results'); 
+end
+
+if isempty(processed_ls)
+   error('command dir([sess_path "/raw/*_processed.mat"]) found no results'); 
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load noreref
 
-noreref_fpath = [sess_path '/raw/' sess_time_str '_noreref.mat'];
+noreref_fpath = [noreref_ls.folder '/' noreref_ls.name];
 lfpStruct = load(noreref_fpath);
 lfpStruct = lfpStruct.lfpStruct;
 
 % load processed
 
-processed_fpath = [sess_path '/raw/' sess_time_str '_processed.mat'];
+processed_fpath = [processed_ls.processed_ls '/' processed_ls.name];
 processed = load(processed_fpath);
 processed = processed.lfpStruct;
 
 % count NaNs on each device
 
-NaN_value = 0;
+old_NaN_value = 0;
 
 frac_nan = [];
 unique_microDevNums = unique(processed.chanIDperNSP{1}{:, 'MicroDevNum'});
@@ -62,16 +73,25 @@ for iDev = 1:length(unique_microDevNums)
     
     microDevFilts = [ microDevFilts current_dev_filt ];
     
-    current_dev_data = processed.lfp{1}(current_dev_filt, :);
-    current_dev_data_frac_nan = sum(current_dev_data(:) == NaN_value)/(size(current_dev_data, 1)*size(current_dev_data, 2));
+    if ~isfield(processed, 'nan_mask')
     
-    frac_nan(iDev) = current_dev_data_frac_nan;
+        current_dev_data = processed.lfp{1}(current_dev_filt, :);
+        current_dev_frac_nan = sum(current_dev_data(:) == old_NaN_value)/(size(current_dev_data, 1)*size(current_dev_data, 2));
+        
+    else
+       
+        current_dev_nan_mask = processed.nan_mask{1}(current_dev_filt, :);
+        current_dev_frac_nan = sum(current_dev_nan_mask(:))/(size(current_dev_nan_mask, 1)*size(current_dev_nan_mask, 2));
+        
+    end
+    
+    frac_nan(iDev) = current_dev_frac_nan;
 end
 
 microDevFilts = logical(microDevFilts);
 
 if ~isfield(processed, 'nan_mask')
-   nan_mask = processed.lfp{1} == NaN_value;
+   nan_mask = (processed.lfp{1} == old_NaN_value);
 else
    nan_mask = processed.nan_mask{1}; 
 end

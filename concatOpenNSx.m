@@ -26,7 +26,7 @@ if nargin < 4,
     chanToOpen = [];
 end
 if nargin<5;
-    nonClockResetTimeStampThresh = 5000;
+    nonClockResetTimeStampThresh = 200;
 end
 
 if isempty(chanToOpen)
@@ -82,7 +82,7 @@ if iscell(nsx_data.Data)
             nsx_data.postProc.nonJunkTimeStamps = original_timestamps;
             nsx_data.postProc.nonJunkCellLengths = original_cell_lengths;
             nsx_data.postProc.samplesAdded = [];
-            nsx_data.postProc.nonJunkSegConcatIdx = [];
+            nsx_data.postProc.nonJunkSegConcatIdx = [1 size(nsx_data.Data{1,1}, 2)];
             nsx_data.postProc.fillerSegConcatIdx = [];
             
             postProcIter = 1;
@@ -99,8 +99,9 @@ if iscell(nsx_data.Data)
                 
                 numSamplesToInsert = floor((samplesInGap - segmentLength) / skipfactor);  
                     
-                if (timeStampDifference > nonClockResetTimeStampThresh) && (numSamplesToInsert>=1) % if timestamps were close to one another,
-                    % there was probably a clock reset
+                check1 = (original_timestamps(1) > nonClockResetTimeStampThresh) && (original_timestamps(2) > nonClockResetTimeStampThresh) && (numSamplesToInsert>=1);
+                check2 = (original_timestamps(1) < nonClockResetTimeStampThresh) && (original_timestamps(2) > nonClockResetTimeStampThresh) && (numSamplesToInsert>=1);
+                if check1 || check2 % checks for non-clock reset split
                     
                     if numSamplesToInsert==1
                         samplesToInsert = nsx_data.Data{1,1}(end);
@@ -133,6 +134,8 @@ if iscell(nsx_data.Data)
                     nsx_data.Data{1} = horzcat(nsx_data.Data{1},samplesToInsert,nsx_data.Data{2});
                     
                 else
+                    
+                    numSamplesToInsert = 0;
                     
                     current_nonJunkSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1;
                     current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2);
@@ -213,12 +216,12 @@ function samps = replicate_data(data_mat, numSamples)
 
     % replicate the data until the needed sample count is reached, mirrored repeats
 
-    incremet_idx = size(data_mat, 2);
+    increment_idx = size(data_mat, 2);
     incrementer = 1; % 1 or -1
 
     while size(temp_samps, 2) < numSamples
 
-        temp_samps = [ temp_samps data_mat(:,incremet_idx) ];
+        temp_samps = [ temp_samps data_mat(:,increment_idx) ];
 
         % if the data contains more than a single point, move an incrementer
         if size(data_mat, 2) > 1
