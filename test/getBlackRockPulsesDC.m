@@ -41,7 +41,7 @@ else
 end
 
 
-if ~isempty(br_timeStamp) && ~isempty(postProc)
+if ~isempty(postProc)
     
     if isfield(postProc,'samplesAdded')
         

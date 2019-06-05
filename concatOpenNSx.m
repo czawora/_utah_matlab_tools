@@ -36,6 +36,7 @@ else
 end
 
 nsx_data.postProc = struct;
+nsx_data.postProc.samplingFreq = nsx_data.MetaTags.SamplingFreq;
 nsx_data.postProc.removedJunk = 0;
 nsx_data.postProc.appliedGain = 0;
 
@@ -99,12 +100,16 @@ if iscell(nsx_data.Data)
                 
                 numSamplesToInsert = floor((samplesInGap - segmentLength) / skipfactor);  
                     
+                % first check for a packet loss, in which both timestamps
+                % are large (first segment was not after clock reset)
                 check1 = (original_timestamps(1) > nonClockResetTimeStampThresh) && (original_timestamps(2) > nonClockResetTimeStampThresh) && (numSamplesToInsert>=1);
+                % check for a packet loss, in which first segment was
+                % result of clock reset
                 check2 = (original_timestamps(1) < nonClockResetTimeStampThresh) && (original_timestamps(2) > nonClockResetTimeStampThresh) && (numSamplesToInsert>=1);
                 if check1 || check2 % checks for non-clock reset split
                     
                     if numSamplesToInsert==1
-                        samplesToInsert = nsx_data.Data{1,1}(end);
+                        samplesToInsert = nsx_data.Data{1,1}(:,end);
                         
                     elseif mod(numSamplesToInsert,2)==1
                         
@@ -122,13 +127,13 @@ if iscell(nsx_data.Data)
                         
                     end
                     
-                    current_fillerSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1;
-                    current_fillerSegConcatIdx_end = current_fillerSegConcatIdx_start + size(samplesToInsert, 2);
+                    current_fillerSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1; %next index after current data
+                    current_fillerSegConcatIdx_end = current_fillerSegConcatIdx_start + size(samplesToInsert, 2)-1; % last index of filler samples added
                     nsx_data.postProc.fillerSegConcatIdx = [nsx_data.postProc.fillerSegConcatIdx; current_fillerSegConcatIdx_start current_fillerSegConcatIdx_end];
 
                     
-                    current_nonJunkSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1 + size(samplesToInsert, 2) + 1;
-                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2);
+                    current_nonJunkSegConcatIdx_start = current_fillerSegConcatIdx_end + 1; % next index after filler samples
+                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2)-1; % last index of data segment added
                     nsx_data.postProc.nonJunkSegConcatIdx = [nsx_data.postProc.nonJunkSegConcatIdx ; current_nonJunkSegConcatIdx_start current_nonJunkSegConcatIdx_end];
                     
                     nsx_data.Data{1} = horzcat(nsx_data.Data{1},samplesToInsert,nsx_data.Data{2});
@@ -138,7 +143,7 @@ if iscell(nsx_data.Data)
                     numSamplesToInsert = 0;
                     
                     current_nonJunkSegConcatIdx_start = size(nsx_data.Data{1}, 2) + 1;
-                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2);
+                    current_nonJunkSegConcatIdx_end = current_nonJunkSegConcatIdx_start + size(nsx_data.Data{2}, 2)-1;
                     nsx_data.postProc.nonJunkSegConcatIdx = [nsx_data.postProc.nonJunkSegConcatIdx ; current_nonJunkSegConcatIdx_start current_nonJunkSegConcatIdx_end];
                     
                     nsx_data.Data{1} = horzcat(nsx_data.Data{1},nsx_data.Data{2});

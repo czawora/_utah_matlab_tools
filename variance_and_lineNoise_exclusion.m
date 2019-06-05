@@ -252,17 +252,19 @@ function variance_and_lineNoise_exclusion(varargin)
     filename = [save_dir 'variance.csv'];
     writetable(var_table,filename);
 
-    %get the pulses
-    analog_splits = strsplit(analog_pulse_fpath, '/');
-    fprintf('getting the sync pulses from ns3: %s and nev: %s\n', analog_pulse_fpath, nev_fpath);
-    pulses_struct = getBlackrockPulses_DC_AN('ns3_fpath', analog_pulse_fpath, 'nev_fpath', nev_fpath);
-    pulses = {used_jacksheet{1, 'NSPsuffix'}{1} used_jacksheet{1, 'FileName'}{1} pulses_struct};
-    
-    gain_bin2uV = 0.25;
     
     load([session_path '/nsx_postProc.mat']);
     physio_nsx_postProc = nsx_postProc;
     physio_nsx_postProc = {used_jacksheet{1, 'NSPsuffix'}{1} used_jacksheet{1, 'FileName'}{1} physio_nsx_postProc};
+    
+    
+    %get the pulses
+    analog_splits = strsplit(analog_pulse_fpath, '/');
+    fprintf('getting the sync pulses from ns3: %s and nev: %s\n', analog_pulse_fpath, nev_fpath);
+    pulses_struct = getBlackrockPulses_DC_AN('ns3_fpath', analog_pulse_fpath, 'nev_fpath', nev_fpath, 'postProc', physio_nsx_postProc);
+    pulses = {used_jacksheet{1, 'NSPsuffix'}{1} used_jacksheet{1, 'FileName'}{1} pulses_struct};
+    
+    gain_bin2uV = 0.25;
     
     %extract start time from jacksheet
     dateInfo_column = 'FileName';
