@@ -1157,7 +1157,7 @@ function plotChannelSpikes(varargin)
                 fill(fill_x, fill_y, lng_colors(r, :));
 
                 %name and metrics
-                text(col_coords(2), current_row, unit_names{r}, 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
+                text(col_coords(2), current_row, strrep(unit_names{r}, '_', ' '), 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
 
                 text(col_coords(3), current_row, sprintf('%d', spikes(r)), 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
 
@@ -1376,7 +1376,7 @@ function plotChannelSpikes(varargin)
         ylim(quantile(mda,[0.00001 0.99999]));
         
         xlabel(current_plot, 'time (min)');
-        ylabel(current_plot, 'ungained voltage');
+        ylabel(current_plot, 'ungained, whitened voltage');
         
         hold off;
         
