@@ -365,7 +365,7 @@ function plotChannelSpikes(varargin)
 
             %fprintf('\t-- plotting real panel %d for chan %s\n', 1, current_chan);
 
-            ylabel('whitened units');
+            ylabel('uV');
             %set bg color
             set(gca,'Color','k');
             set(gca, 'FontSize', font_size);
@@ -758,7 +758,7 @@ function plotChannelSpikes(varargin)
 
                 %fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 6, current_chan, n);
 
-                n_marker = nz_markers( mod(n-1, length(nz_markers)) + 1 );
+                n_marker = nz_markers( mod(n-1, length(nz_markers)) );
                 current_nz = noise_units(n);
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
