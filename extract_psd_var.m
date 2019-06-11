@@ -304,7 +304,7 @@ for iDevNum = 1:length(num_unique_microDevNum)
     tightfig();
     set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
     print(gcf,[psd_path '/' sprintf('microDev%d_psd.png', current_microDevNum)],'-dpng','-r300');
-
+    close(gcf);
 end
 
 end
