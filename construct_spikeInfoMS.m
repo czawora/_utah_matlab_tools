@@ -382,6 +382,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     num_channels = length(loaded_chan);
     num_total_units_added = 0;
     
+    
     for iChan = 1:num_channels
         
         % how many units found on this channel
@@ -462,8 +463,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                       
                 unit_timeStamp_ms = loaded_chan(iChan).firings(2,firings_filt) ./ sampFreq2MS_factor;
                 timeStamp{num_total_units_added, 1} = unit_timeStamp_ms;
-                
-                
+                                
                 
                 % store waveForms
                 

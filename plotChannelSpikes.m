@@ -174,6 +174,21 @@ function plotChannelSpikes(varargin)
         end
         
         
+        %clip_length
+        clip_length = size(clips, 2);
+        
+        if clip_length > 50
+
+            mid_clip_point = floor(clip_length/2);
+            clip_to_plot = [ (mid_clip_point-24):mid_clip_point (mid_clip_point+1):(mid_clip_point+25) ];
+            
+        else
+            
+            clip_to_plot = 1:clip_length;
+            
+        end
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,8 +400,8 @@ function plotChannelSpikes(varargin)
 
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
-                avg_wf = mean(clips(nzIDs_current_nz_condi,:), 1);
-                sd_wf = std(clips(nzIDs_current_nz_condi,:),0, 1);
+                avg_wf = mean(clips(nzIDs_current_nz_condi,clip_to_plot), 1);
+                sd_wf = std(clips(nzIDs_current_nz_condi,clip_to_plot),0, 1);
 
                 if size(avg_wf, 1) < 2
                     avg_wf = avg_wf';
@@ -430,8 +445,8 @@ function plotChannelSpikes(varargin)
 
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit );
 
-                avg_wf = mean(clips(unitIDs_current_unit_condi,:), 1);
-                sd_wf = std(clips(unitIDs_current_unit_condi,:),0, 1);
+                avg_wf = mean(clips(unitIDs_current_unit_condi,clip_to_plot), 1);
+                sd_wf = std(clips(unitIDs_current_unit_condi,clip_to_plot),0, 1);
 
                 if size(avg_wf, 1) < 2
                     avg_wf = avg_wf';
@@ -457,7 +472,7 @@ function plotChannelSpikes(varargin)
                     u_color, 'linestyle','none');
                 alpha(wf_shading_opacity);
 
-                l = line( 1:size(clips,2) , avg_wf);
+                l = line( 1:size(avg_wf,2) , avg_wf);
                 set(l, 'Color', u_color);
 
                 legend_cell{length(legend_cell) + 1} = good_units_names{u};
@@ -470,7 +485,7 @@ function plotChannelSpikes(varargin)
             %set axes
             y_axis_offset = 50;
             xmin = 1;
-            xmax = size(clips,2);
+            xmax = size(avg_wf,2);
             ymin = min_y - y_axis_offset;
             ymax = max_y + y_axis_offset;
             axis(current_plot, [ xmin xmax ymin ymax ]);
@@ -661,7 +676,7 @@ function plotChannelSpikes(varargin)
                 current_nz = noise_units(n);
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
-                wv = clips(nzIDs_current_nz_condi,:);
+                wv = clips(nzIDs_current_nz_condi,clip_to_plot);
                 timestamps = firings(2, nzIDs_current_nz_condi)/30000/60;
 
                 time_min = min(timestamps);
@@ -693,7 +708,7 @@ function plotChannelSpikes(varargin)
                 current_unit = good_units(u);
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit);
 
-                wv = clips(unitIDs_current_unit_condi,:);
+                wv = clips(unitIDs_current_unit_condi,clip_to_plot);
                 timestamps = firings(2, unitIDs_current_unit_condi)/30000/60;
 
                 time_min = min(timestamps);
@@ -762,7 +777,7 @@ function plotChannelSpikes(varargin)
                 current_nz = noise_units(n);
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
-                wv = clips(nzIDs_current_nz_condi,:);
+                wv = clips(nzIDs_current_nz_condi,clip_to_plot);
                 timestamps = firings(2, nzIDs_current_nz_condi)/30000/60;
 
                 time_min = min(timestamps);
@@ -796,7 +811,7 @@ function plotChannelSpikes(varargin)
                 current_unit = good_units(u);
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit);
 
-                wv = clips(unitIDs_current_unit_condi,:);
+                wv = clips(unitIDs_current_unit_condi,clip_to_plot);
                 timestamps = firings(2, unitIDs_current_unit_condi)/30000/60;
                 
                 time_min = min(timestamps);

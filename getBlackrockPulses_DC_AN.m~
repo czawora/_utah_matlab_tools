@@ -7,13 +7,14 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
         
     p.addParameter('ns3_fpath', '', @ischar);
     p.addParameter('nev_fpath', '', @ischar);
-    p.addParameter('postProc', )
+    p.addParameter('postProc', []);
 
     parse(p, varargin{:});
     
     %record filenames passed in
     ns3_fpath = p.Results.ns3_fpath;
     nev_fpath = p.Results.nev_fpath;
+    postProc = p.Results.postProc;
     
     ns3_fpath_splits = strsplit(ns3_fpath, '/');
     nev_fpath_splits = strsplit(nev_fpath, '/');
@@ -100,6 +101,8 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
     pulses.din2 = [];
     pulses.din3 = [];
     pulses.din4 = [];
+
+    pulses.
     
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
      

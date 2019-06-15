@@ -174,6 +174,21 @@ function plotChannelSpikes(varargin)
         end
         
         
+        %clip_length
+        clip_length = size(clips, 2);
+        
+        if clip_length > 50
+
+            mid_clip_point = floor(clip_length/2);
+            clip_to_plot = [ (mid_clip_point-24):mid_clip_point (mid_clip_point+1):(mid_clip_point+25) ];
+            
+        else
+            
+            clip_to_plot = 1:clip_length;
+            
+        end
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -365,7 +380,7 @@ function plotChannelSpikes(varargin)
 
             %fprintf('\t-- plotting real panel %d for chan %s\n', 1, current_chan);
 
-            ylabel('uV');
+            ylabel('whitened units');
             %set bg color
             set(gca,'Color','k');
             set(gca, 'FontSize', font_size);
@@ -385,8 +400,8 @@ function plotChannelSpikes(varargin)
 
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
-                avg_wf = mean(clips(nzIDs_current_nz_condi,:), 1);
-                sd_wf = std(clips(nzIDs_current_nz_condi,:),0, 1);
+                avg_wf = mean(clips(nzIDs_current_nz_condi,clip_to_plot), 1);
+                sd_wf = std(clips(nzIDs_current_nz_condi,clip_to_plot),0, 1);
 
                 if size(avg_wf, 1) < 2
                     avg_wf = avg_wf';
@@ -430,8 +445,8 @@ function plotChannelSpikes(varargin)
 
                 unitIDs_current_unit_condi = ( firings(3,:) == current_unit );
 
-                avg_wf = mean(clips(unitIDs_current_unit_condi,:), 1);
-                sd_wf = std(clips(unitIDs_current_unit_condi,:),0, 1);
+                avg_wf = mean(clips(unitIDs_current_unit_condi,clip_to_plot), 1);
+                sd_wf = std(clips(unitIDs_current_unit_condi,clip_to_plot),0, 1);
 
                 if size(avg_wf, 1) < 2
                     avg_wf = avg_wf';
@@ -457,7 +472,7 @@ function plotChannelSpikes(varargin)
                     u_color, 'linestyle','none');
                 alpha(wf_shading_opacity);
 
-                l = line( 1:size(clips,2) , avg_wf);
+                l = line( 1:size(avg_wf,2) , avg_wf);
                 set(l, 'Color', u_color);
 
                 legend_cell{length(legend_cell) + 1} = good_units_names{u};
@@ -758,7 +773,7 @@ function plotChannelSpikes(varargin)
 
                 %fprintf('\t\t-- plotting real panel %d for chan %s noise %d\n', 6, current_chan, n);
 
-                n_marker = nz_markers( mod(n-1, length(nz_markers)) );
+                n_marker = nz_markers( mod(n-1, length(nz_markers)) + 1 );
                 current_nz = noise_units(n);
                 nzIDs_current_nz_condi = (firings(3,:) == current_nz);
 
@@ -1157,7 +1172,7 @@ function plotChannelSpikes(varargin)
                 fill(fill_x, fill_y, lng_colors(r, :));
 
                 %name and metrics
-                text(col_coords(2), current_row, unit_names{r}, 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
+                text(col_coords(2), current_row, strrep(unit_names{r}, '_', ' '), 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
 
                 text(col_coords(3), current_row, sprintf('%d', spikes(r)), 'Color', 'w', 'HorizontalAlignment', 'center', 'FontSize', font_size);
 
@@ -1376,7 +1391,7 @@ function plotChannelSpikes(varargin)
         ylim(quantile(mda,[0.00001 0.99999]));
         
         xlabel(current_plot, 'time (min)');
-        ylabel(current_plot, 'ungained voltage');
+        ylabel(current_plot, 'ungained, whitened voltage');
         
         hold off;
         

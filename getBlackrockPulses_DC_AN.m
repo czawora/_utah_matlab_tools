@@ -97,19 +97,24 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
         
     end
     
-    pulses.din1 = [];
-    pulses.din2 = [];
-    pulses.din3 = [];
-    pulses.din4 = [];
+    pulses.din1_uptimes = [];
+    pulses.din2_uptimes = [];
+    pulses.din3_uptimes = [];
+    pulses.din4_uptimes = [];
+
+    pulses.din1_ts = [];
+    pulses.din2_ts = [];
+    pulses.din3_ts = [];
+    pulses.din4_ts = [];
     
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
      
         NEVdata = openNEV( nev_fpath , 'nosave' );
         
-        pulses.din1 = getBlackRockPulsesDC(NEVdata, 9, postProc);
-        pulses.din2 = getBlackRockPulsesDC(NEVdata, 10, postProc);
-        pulses.din3 = getBlackRockPulsesDC(NEVdata, 11, postProc);
-        pulses.din4 = getBlackRockPulsesDC(NEVdata, 12, postProc);
+        [pulses.din1_uptimes, pulses.din1_ts] = getBlackRockPulsesDC(NEVdata, 9, postProc);
+        [pulses.din2_uptimes, pulses.din2_ts] = getBlackRockPulsesDC(NEVdata, 10, postProc);
+        [pulses.din3_uptimes, pulses.din3_ts] = getBlackRockPulsesDC(NEVdata, 11, postProc);
+        [pulses.din4_uptimes, pulses.din4_ts] = getBlackRockPulsesDC(NEVdata, 12, postProc);
 
     end 
     
