@@ -472,7 +472,7 @@ function plotChannelSpikes(varargin)
                     u_color, 'linestyle','none');
                 alpha(wf_shading_opacity);
 
-                l = line( 1:size(avg_wf,2) , avg_wf);
+                l = line( 1:length(avg_wf) , avg_wf);
                 set(l, 'Color', u_color);
 
                 legend_cell{length(legend_cell) + 1} = good_units_names{u};
@@ -485,7 +485,7 @@ function plotChannelSpikes(varargin)
             %set axes
             y_axis_offset = 50;
             xmin = 1;
-            xmax = size(avg_wf,2);
+            xmax = length(avg_wf);
             ymin = min_y - y_axis_offset;
             ymax = max_y + y_axis_offset;
             axis(current_plot, [ xmin xmax ymin ymax ]);
