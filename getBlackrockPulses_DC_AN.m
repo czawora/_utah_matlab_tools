@@ -107,14 +107,20 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
     pulses.din3_ts = [];
     pulses.din4_ts = [];
     
+    pulses.din1_IPIViolationFlag = [];
+    pulses.din2_IPIViolationFlag = [];
+    pulses.din3_IPIViolationFlag = []; 
+    pulses.din4_IPIViolationFlag = [];
+    pulses.what_is_IPIViolationFlag = 'tldr: when correctSplitNEV is called on din uptimes AND a clock reset is detected an estimated timestamp is calculated marking the end of a segment. If the time between that timestamp and the last preceeding pulse is greater than the channel-specifc IPI, this flag is set to 1. read correctSplitNEV';
+    
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
      
         NEVdata = openNEV( nev_fpath , 'nosave' );
         
-        [pulses.din1_uptimes, pulses.din1_ts] = getBlackRockPulsesDC(NEVdata, 9, postProc);
-        [pulses.din2_uptimes, pulses.din2_ts] = getBlackRockPulsesDC(NEVdata, 10, postProc);
-        [pulses.din3_uptimes, pulses.din3_ts] = getBlackRockPulsesDC(NEVdata, 11, postProc);
-        [pulses.din4_uptimes, pulses.din4_ts] = getBlackRockPulsesDC(NEVdata, 12, postProc);
+        [pulses.din1_uptimes, pulses.din1_ts, pulses.din1_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 9, postProc);
+        [pulses.din2_uptimes, pulses.din2_ts, pulses.din2_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 10, postProc);
+        [pulses.din3_uptimes, pulses.din3_ts, pulses.din3_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 11, postProc);
+        [pulses.din4_uptimes, pulses.din4_ts, pulses.din4_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 12, postProc);
 
     end 
     

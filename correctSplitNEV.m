@@ -1,4 +1,4 @@
-function br_timeStamp = correctSplitNEV(br_timeStamp, postProc)
+function [br_timeStamp, IPIViolationFlag] = correctSplitNEV(br_timeStamp, whichDC, postProc)
 
     if isempty(br_timeStamp)
        error('br_timeStamp is empty'); 
@@ -8,7 +8,10 @@ function br_timeStamp = correctSplitNEV(br_timeStamp, postProc)
        error('postProc is empty'); 
     end
     
+    IPIViolationFlag = 0;
 
+    verbose = 0;
+    
     nonClockResetTimeStampThresh = 200;
 
     samplingRate = postProc.samplingFreq; 
@@ -32,12 +35,13 @@ function br_timeStamp = correctSplitNEV(br_timeStamp, postProc)
 
         if check1 || check2 % checks for non-clock reset split
 
-
-           fprintf('cumulative_timeStampUpToBeginningOfSeg = %d\n', cumulative_timeStampUpToBeginningOfSeg);
-           fprintf('comparing seg %d to seg %d\n', seg, seg + 1);
-           fprintf('seg %d has timestamp %d\n', seg, original_timestamps(seg));
-           fprintf('seg %d has %d samples\n', seg, postProc.nonJunkCellLengths(seg));
-
+           if verbose
+               fprintf('cumulative_timeStampUpToBeginningOfSeg = %d\n', cumulative_timeStampUpToBeginningOfSeg);
+               fprintf('comparing seg %d to seg %d\n', seg, seg + 1);
+               fprintf('seg %d has timestamp %d\n', seg, original_timestamps(seg));
+               fprintf('seg %d has %d samples\n', seg, postProc.nonJunkCellLengths(seg));
+           end
+           
            if original_timestamps(seg) ~= original_timestamps(seg+1) % sometimes the universe gives you a free sample
                cumulative_timeStampUpToBeginningOfSeg = cumulative_timeStampUpToBeginningOfSeg + postProc.nonJunkCellLengths(seg)*(30000/samplingRate) + postProc.samplesAdded(seg);
            end
@@ -71,12 +75,13 @@ function br_timeStamp = correctSplitNEV(br_timeStamp, postProc)
 
 
 
-
-           fprintf('clock reset!!\n');
-           fprintf('cumulative_timeStampUpToBeginningOfSeg = %d\n', cumulative_timeStampUpToBeginningOfSeg);
-           fprintf('comparing seg %d to seg %d\n', seg, seg + 1);
-           fprintf('seg %d has timestamp %d\n', seg, original_timestamps(seg));
-
+           if verbose
+               fprintf('clock reset!!\n');
+               fprintf('cumulative_timeStampUpToBeginningOfSeg = %d\n', cumulative_timeStampUpToBeginningOfSeg);
+               fprintf('comparing seg %d to seg %d\n', seg, seg + 1);
+               fprintf('seg %d has timestamp %d\n', seg, original_timestamps(seg));
+           end
+           
            % where is the pulse right after the clock reset
            firstPulse_afterCurrentClockReset = negative_diffs_indices(clockResetIncrement)+1;
 
@@ -110,22 +115,37 @@ function br_timeStamp = correctSplitNEV(br_timeStamp, postProc)
 
 
 
-
-            fprintf('timestamp before switch point %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset-1));
-            fprintf('timestamp at switch point %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset));
-
             % best estimate of timeStamp corresponding to end of the current segment
             time_upToNegativeDiff_in30 = cumulative_timeStampUpToBeginningOfSeg + postProc.nonJunkCellLengths(seg)*(30000/samplingRate);
 
-            fprintf('time_upToNegativeDiff_in30: %d\n', time_upToNegativeDiff_in30);
-            fprintf('difference between ts @ switch_point-1 and time_upToNegativeDiff_in30: %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset-1) - time_upToNegativeDiff_in30);
+            if verbose
+                
+                fprintf('timestamp before switch point %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset-1));
+                fprintf('timestamp at switch point %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset));
 
-            secondsOfSamples_pastLastPulse = (time_upToNegativeDiff_in30 - new_br_timeStamps(firstPulse_afterCurrentClockReset-1))/(samplingRate);
-            fprintf('samples go on for %0.2f seconds after last pulse in this segment\n', secondsOfSamples_pastLastPulse);
-
-            warning_cutoff = 16;
-            if secondsOfSamples_pastLastPulse > warning_cutoff
-               error('samples continued on for more than %d seconds after last pulse. Pulses should occur ever ~14 seconds. Make sure this is a classic clock reset split before proceeding\n', secondsOfSamples_pastLastPulse); 
+                fprintf('time_upToNegativeDiff_in30: %d\n', time_upToNegativeDiff_in30);
+                fprintf('difference between ts @ switch_point-1 and time_upToNegativeDiff_in30: %d\n', new_br_timeStamps(firstPulse_afterCurrentClockReset-1) - time_upToNegativeDiff_in30);
+            end
+            
+            if whichDC == 12 || whichDC == 9
+                
+                secondsOfSamples_pastLastPulse = (time_upToNegativeDiff_in30 - new_br_timeStamps(firstPulse_afterCurrentClockReset-1))/(samplingRate);
+                
+                if verbose
+                    fprintf('samples go on for %0.2f seconds after last pulse in this segment\n', secondsOfSamples_pastLastPulse);
+                end
+                
+                if whichDC == 12
+                    warning_cutoff = 16;
+                elseif whichDC == 9
+                    warning_cutoff = 3;
+                end
+                
+                if secondsOfSamples_pastLastPulse > warning_cutoff
+                   fprintf('samples continued on for more than %d seconds after last pulse. Pulses should occur every ~%d seconds. Make sure this is a classic clock reset split before proceeding -- setting IPIViolationFlag = 1\n', secondsOfSamples_pastLastPulse, warning_cutoff); 
+                   IPIViolationFlag = 1;
+                end
+                
             end
 
             % add the estimated timestamp to this segment pulses

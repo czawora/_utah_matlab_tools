@@ -1,6 +1,7 @@
 
 %test files
-pulses = getBlackrockPulses_DC_AN('ns3_fpath', '/Volumes/56D/UTAH_D/NIH068/data_raw/181209_0135/PiGlkGDWmEEiGjDfG-20181209-013554-INST1.ns3', 'nev_fpath', '/Volumes/56D/UTAH_D/NIH068/data_raw/181209_0135/PiGlkGDWmEEiGjDfG-20181209-013554-INST1.nev');
+nsx = concatOpenNSx()
+pulses = getBlackrockPulses_DC_AN('postProc', , 'ns3_fpath', '/Volumes/56D/UTAH_D/NIH068/data_raw/181209_0135/PiGlkGDWmEEiGjDfG-20181209-013554-INST1.ns3', 'nev_fpath', '/Volumes/56D/UTAH_D/NIH068/data_raw/181209_0135/PiGlkGDWmEEiGjDfG-20181209-013554-INST1.nev');
 pulses = getBlackrockPulses_DC_AN('ns3_fpath', '/Volumes/56C/UTAH_C/NIH062/data_raw/180923_0027/YmCiLtiHHid-20180923-002702-INST1.ns3', 'nev_fpath', '/Volumes/56C/UTAH_C/NIH062/data_raw/180923_0027/YmCiLtiHHid-20180923-002702-INST1.nev');
 
 
@@ -43,7 +44,8 @@ title('shifted uptimes');
 
 
 % range plot
-sample_plot_range = (5150744-1000):(5150744);
+sample_plot_range = 1:2000;
+%sample_plot_range = (5150744-1000):(5150744);
 
 figure();
 plot(sample_plot_range, pulses.ain20_ts(sample_plot_range) ./ max(pulses.ain20_ts(sample_plot_range)), 'k-');
@@ -75,7 +77,7 @@ title('diff hist');
 %how close is an ain uptime to its nearest din uptime
 min_diffs = [];
 
-for iAin = 2:length(pulses.ain20_uptimes)
+for iAin = 10:length(pulses.ain20_uptimes)
    
     pulse_diff = pulses.ain20_uptimes(iAin) - pulses.din4_uptimes;
     abs_pulse_diff = abs(pulse_diff);

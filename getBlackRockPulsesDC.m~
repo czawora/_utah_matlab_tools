@@ -6,6 +6,10 @@ function [output_br_timeStamp_up, output_ts] = getBlackRockPulsesDC(NEVdata,whic
 
 % keyboard
 
+output_br_timeStamp_up = [];
+output_ts = [];
+ISIViolationFlag = 0;
+
 if nargin < 3,
     postProc = [];
 end
@@ -38,64 +42,60 @@ if ~isempty(timeStamps)
     
     br_timeStamp_up = timeStamps{DCposition}(timeStamps{DCposition}(:,1)==1,2);
     br_timeStamp_down = timeStamps{DCposition}(timeStamps{DCposition}(:,1)==-1,2);
+        
+end
+
+output_br_timeStamp_up = br_timeStamp_up;
+
+if ~isempty(br_timeStamp_up) && ~any(isnan(br_timeStamp_up))
+    
+    if ~isempty(postProc) && isfield(postProc,'samplesAdded')
+        
+        [br_timeStamp_up, ISIViolationFlag] = correctSplitNEV(br_timeStamp_up, whichDC, postProc);
+        [br_timeStamp_down, ~] = correctSplitNEV(br_timeStamp_down, whichDC, postProc);
+    end
 
     [br_timeStamp_combo, sorted_idx] = sort([br_timeStamp_up ; br_timeStamp_down]);
     
     up_down_indicator = [ repmat(1, length(br_timeStamp_up), 1) ; repmat(-1, length( br_timeStamp_down), 1) ];
     sorted_up_down_indicator = up_down_indicator(sorted_idx);
-        
-else
-    output_br_timeStamp_up = nan;
-    return;
-end
-
-
-if ~isempty(br_timeStamp_up) && ~any(isnan(br_timeStamp_up)) && ~isempty(postProc)
     
-    if isfield(postProc,'samplesAdded')
-        
-        br_timeStamp_combo = correctSplitNEV(br_timeStamp_combo, postProc);
+    output_br_timeStamp_up = br_timeStamp_combo(sorted_up_down_indicator == 1);
+
+    br_timeStamp_combo_ms = floor(br_timeStamp_combo ./ 30);
+
+    i = 1;
+
+    %skip any initial pulse-down indicators
+    while sorted_up_down_indicator(i) == -1
+       i = i + 1; 
     end
-en
 
-output_br_timeStamp_up = br_timeStamp_combo(sorted_up_down_indicator == 1);
+    last_ts = 1;
+    while i <= length(br_timeStamp_combo_ms)
 
-br_timeStamp_combo_ms = floor(br_timeStamp_combo ./ 30);
+        current_ts = br_timeStamp_combo_ms(i);
 
-output_ts = [];
+        if sorted_up_down_indicator(i) == 1 % reach a pulse-up
 
-i = 1;
+            %preceeding interval was pulse-down
+            output_ts(last_ts:current_ts-1) = 0;
 
-%skip any initial pulse-down indicators
-while sorted_up_down_indicator(i) == -1
-   i = i + 1; 
-end
+            last_ts = current_ts;
 
-last_ts = 1;
-while i <= length(br_timeStamp_combo_ms)
-   
-    current_ts = br_timeStamp_combo_ms(i);
-    
-    if sorted_up_down_indicator(i) == 1 % reach a pulse-up
-           
-        %preceeding interval was pulse-down
-        output_ts(last_ts:current_ts-1) = 0;
-        
-        last_ts = current_ts;
-        
-    elseif sorted_up_down_indicator(i) == -1 % reach a pulse-down
-        
-        %preceeding interval was pulse-up
-        output_ts(last_ts:current_ts-1) = 1;
-        
-        last_ts = current_ts;
-        
+        elseif sorted_up_down_indicator(i) == -1 % reach a pulse-down
+
+            %preceeding interval was pulse-up
+            output_ts(last_ts:current_ts-1) = 1;
+
+            last_ts = current_ts;
+
+        end
+
+        i = i + 1;
     end
-    
-    i = i + 1;
+
 end
-
-
 
 end
 
