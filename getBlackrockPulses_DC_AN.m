@@ -115,7 +115,7 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
     
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
      
-        NEVdata = openNEV( nev_fpath , 'nosave' );
+        NEVdata = openNEV( nev_fpath , 'nosave' , 'nomat');
         
         [pulses.din1_uptimes, pulses.din1_ts, pulses.din1_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 9, postProc);
         [pulses.din2_uptimes, pulses.din2_ts, pulses.din2_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 10, postProc);
