@@ -1,4 +1,4 @@
-function [output_br_timeStamp_up, output_ts, IPIViolationFlag] = getBlackRockPulsesDC(NEVdata,whichDC,postProc)
+function [output_br_timeStamp_up, output_ts, IPIViolationFlag, moreClockResetsThanNegDiff] = getBlackRockPulsesDC(NEVdata,whichDC,postProc)
 %Given the NEV data, outputs the pulse information from a certain DC
 %channel
 %
@@ -9,6 +9,7 @@ function [output_br_timeStamp_up, output_ts, IPIViolationFlag] = getBlackRockPul
 output_br_timeStamp_up = [];
 output_ts = [];
 IPIViolationFlag = 0;
+moreClockResetsThanNegDiff = 0;
 
 if nargin < 3,
     postProc = [];
@@ -51,10 +52,11 @@ if ~isempty(br_timeStamp_up) && ~any(isnan(br_timeStamp_up))
     
     if ~isempty(postProc) && isfield(postProc,'samplesAdded')
         
-        [br_timeStamp_up, IPIViolationFlag] = correctSplitNEV(br_timeStamp_up, whichDC, postProc);
+        [br_timeStamp_up, IPIViolationFlag, moreClockResetsThanNegDiff] = correctSplitNEV(br_timeStamp_up, whichDC, postProc);
     end
     
 end
+
 
 output_br_timeStamp_up = br_timeStamp_up;
 

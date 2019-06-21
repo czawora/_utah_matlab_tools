@@ -113,14 +113,21 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
     pulses.din4_IPIViolationFlag = [];
     pulses.what_is_IPIViolationFlag = 'tldr: when correctSplitNEV is called on din uptimes AND a clock reset is detected an estimated timestamp is calculated marking the end of a segment. If the time between that timestamp and the last preceeding pulse is greater than the channel-specifc IPI, this flag is set to 1. read correctSplitNEV';
     
+    pulses.din1_moreClockResetsThanNegDiff = [];
+    pulses.din2_moreClockResetsThanNegDiff = [];
+    pulses.din3_moreClockResetsThanNegDiff = []; 
+    pulses.din4_moreClockResetsThanNegDiff = [];
+    pulses.what_is_moreClockResetsThanNegDiff = 'based on the postProc from the nsx file more clock resets occurred than could be detected in digital channel pulse times using negative diffs. This condition prohibits clock reset correction for a channels pulses. Returned pulses are uncorrected';
+    
+    
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
      
         NEVdata = openNEV( nev_fpath , 'nosave' , 'nomat');
         
-        [pulses.din1_uptimes, pulses.din1_ts, pulses.din1_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 9, postProc);
-        [pulses.din2_uptimes, pulses.din2_ts, pulses.din2_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 10, postProc);
-        [pulses.din3_uptimes, pulses.din3_ts, pulses.din3_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 11, postProc);
-        [pulses.din4_uptimes, pulses.din4_ts, pulses.din4_IPIViolationFlag] = getBlackRockPulsesDC(NEVdata, 12, postProc);
+        [pulses.din1_uptimes, pulses.din1_ts, pulses.din1_IPIViolationFlag, pulses.din1_moreClockResetsThanNegDiff] = getBlackRockPulsesDC(NEVdata, 9, postProc);
+        [pulses.din2_uptimes, pulses.din2_ts, pulses.din2_IPIViolationFlag, pulses.din2_moreClockResetsThanNegDiff] = getBlackRockPulsesDC(NEVdata, 10, postProc);
+        [pulses.din3_uptimes, pulses.din3_ts, pulses.din3_IPIViolationFlag, pulses.din3_moreClockResetsThanNegDiff] = getBlackRockPulsesDC(NEVdata, 11, postProc);
+        [pulses.din4_uptimes, pulses.din4_ts, pulses.din4_IPIViolationFlag, pulses.din4_moreClockResetsThanNegDiff] = getBlackRockPulsesDC(NEVdata, 12, postProc);
 
     end 
     
