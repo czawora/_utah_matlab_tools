@@ -1,4 +1,4 @@
-function [br_timeStamp, IPIViolationFlag] = correctSplitNEV(br_timeStamp, whichDC, postProc)
+function [br_timeStamp, IPIViolationFlag, moreClockResetsThanNegDiff] = correctSplitNEV(br_timeStamp, whichDC, postProc)
 
     if isempty(br_timeStamp)
        error('br_timeStamp is empty'); 
@@ -9,6 +9,7 @@ function [br_timeStamp, IPIViolationFlag] = correctSplitNEV(br_timeStamp, whichD
     end
     
     IPIViolationFlag = 0;
+    moreClockResetsThanNegDiff = 0;
 
     verbose = 0;
     
@@ -80,6 +81,15 @@ function [br_timeStamp, IPIViolationFlag] = correctSplitNEV(br_timeStamp, whichD
                fprintf('cumulative_timeStampUpToBeginningOfSeg = %d\n', cumulative_timeStampUpToBeginningOfSeg);
                fprintf('comparing seg %d to seg %d\n', seg, seg + 1);
                fprintf('seg %d has timestamp %d\n', seg, original_timestamps(seg));
+           end
+           
+           %are there more clock resets recorded than can be acounted for using solely pulse negative diffs from this channel
+           if length(negative_diffs_indices) < clockResetIncrement
+              
+              fprintf('DC%d: found only %d negative diffs in the pulse times, but nsx_postProc indicates more than %d clock resets. Returning uncorrected NEV pulse times for this channel\n', whichDC, length(negative_diffs_indices), length(negative_diffs_indices)); 
+              
+              moreClockResetsThanNegDiff = 1;              
+              return;
            end
            
            % where is the pulse right after the clock reset
