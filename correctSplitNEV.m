@@ -1,4 +1,4 @@
-function [br_timeStamp, IPIViolationFlag, moreClockResetsThanNegDiff] = correctSplitNEV(br_timeStamp, whichDC, postProc)
+function [br_timeStamp, IPIViolationFlag, moreClockResetsThanNegDiff, moreNegDiffThanClockReset] = correctSplitNEV(br_timeStamp, whichDC, postProc)
 
     if isempty(br_timeStamp)
        error('br_timeStamp is empty'); 
@@ -10,6 +10,7 @@ function [br_timeStamp, IPIViolationFlag, moreClockResetsThanNegDiff] = correctS
     
     IPIViolationFlag = 0;
     moreClockResetsThanNegDiff = 0;
+    moreNegDiffThanClockReset = 0;
 
     verbose = 0;
     
@@ -200,7 +201,8 @@ function [br_timeStamp, IPIViolationFlag, moreClockResetsThanNegDiff] = correctS
     end
 
     if any(diff(new_br_timeStamps)<0)
-       error('finished the adjustment loop, but negative diffs remain. This should not happen'); 
+       moreNegDiffThanClockReset = 1;
+       fprintf('finished the adjustment loop, but negative diffs remain. This should not happen'); 
     end
 
     br_timeStamp = new_br_timeStamps;
