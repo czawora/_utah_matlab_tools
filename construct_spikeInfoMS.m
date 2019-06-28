@@ -319,7 +319,8 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
     sessUniqueUnitID = table([], [], [], [], [], [], [], [], [], 'VariableNames', sessUniqueUnitID_varNames);
 
-    jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames);
+    jackTableUsed = cell2table(cell(0, length(split_jacksheet.Properties.VariableNames)), 'VariableNames', split_jacksheet.Properties.VariableNames);
+    %jackTableUsed = table([],[],[],[],[],[],[],[],[],[],[],[],[],[],[], 'VariableNames', split_jacksheet.Properties.VariableNames); % does not work when jacksheet has a column removed or added
 
     timeStamp = {};
     extractInfoStr = {};

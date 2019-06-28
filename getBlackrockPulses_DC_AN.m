@@ -113,7 +113,7 @@ function pulses = getBlackrockPulses_DC_AN(varargin)
     pulses.din4_flags = [];
     pulses.what_is_IPIViolationFlag = 'tldr: when correctSplitNEV is called on din uptimes AND a clock reset is detected an estimated timestamp is calculated marking the end of a segment. If the time between that timestamp and the last preceeding pulse is greater than the channel-specifc IPI, this flag is set to 1. read correctSplitNEV';
     pulses.what_is_moreClockResetsThanNegDiff = 'based on the postProc from the nsx file more clock resets occurred than could be detected in digital channel pulse times using negative diffs. This condition prohibits clock reset correction for a channels pulses. Returned pulses are uncorrected';
-    pulses.what_is_moreNegDiffThanClockReset = 'inverse of moreClockResetsThanNegDiff';
+    pulses.what_is_moreNegDiffThanClockReset = 'inverse of moreClockResetsThanNegDiff. dont trust the corrected Nev pulses.';
    
     
     if ~isequal(nev_fpath, '') && exist(nev_fpath, 'file')
