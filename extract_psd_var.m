@@ -36,6 +36,11 @@ end
 
 noreref_ls = dir([sess_path '/raw/*_noreref.mat']);
 processed_ls = dir([sess_path '/raw/*_processed.mat']);
+variance_ls = dir([sess_path '/cleaning/variance.csv']);
+
+if isempty(variance_ls)
+   error('command dir([sess_path "/cleaning/variance.csv"]) found no results'); 
+end
 
 if isempty(noreref_ls)
    error('command dir([sess_path "/raw/*_noreref.mat"]) found no results'); 
@@ -49,14 +54,19 @@ end
 % load noreref
 
 noreref_fpath = [noreref_ls.folder '/' noreref_ls.name];
-lfpStruct = load(noreref_fpath);
-lfpStruct = lfpStruct.lfpStruct;
+noreref = load(noreref_fpath);
+noreref = noreref.lfpStruct;
 
 % load processed
 
 processed_fpath = [processed_ls.folder '/' processed_ls.name];
 processed = load(processed_fpath);
 processed = processed.lfpStruct;
+
+% load variance.csv
+
+cleaning_info_fpath = [variance_ls.folder '/' variance_ls.name];
+cleaning_info = readtable(cleaning_info_fpath);
 
 % count NaNs on each device
 
@@ -101,14 +111,14 @@ end
 
 % how many windows to use? 6 min windows = 10 per hour
 
-if lfpStruct.sessDurMin < min_per_window
+if noreref.sessDurMin < min_per_window
     error('lfpStruct.sessDurMin < min_per_window');
 end
 
-lfp = double(lfpStruct.lfp{1});
-lfp_sample_num = size(lfp, 2);
+noreref_lfp = double(noreref.lfp{1});
+lfp_sample_num = size(noreref_lfp, 2);
 
-samples_per_min = lfpStruct.samplingFreq * 60;
+samples_per_min = noreref.samplingFreq * 60;
 
 samples_per_window = samples_per_min * min_per_window;
 
@@ -123,7 +133,7 @@ window_start_times_samples = window_start_times_minute .* samples_per_min;
 window_stop_times_samples = window_start_times_samples + samples_per_window;
 
 % what samples numbers does our data correspond to in the daily count
-sessStart_datetime = datetime(lfpStruct.startTime_datenum,'ConvertFrom','datenum');
+sessStart_datetime = datetime(noreref.startTime_datenum,'ConvertFrom','datenum');
 sessStart_reference_datetime = datetime(year(sessStart_datetime), month(sessStart_datetime), day(sessStart_datetime));
 
 sessStart_minutes_since_midnight = minutes(sessStart_datetime - sessStart_reference_datetime);
@@ -188,7 +198,7 @@ end
 samples_intervals = [samples_interval_starts' samples_interval_stops'];
 samples_intervals_midpoints = samples_interval_starts + samples_per_window/2;
 
-fprintf('sessDurMin: %0.2f\n', lfpStruct.sessDurMin);
+fprintf('sessDurMin: %0.2f\n', noreref.sessDurMin);
 for iInterval = 1:length(samples_interval_starts)
     fprintf('interval %d: %0.2f - %0.2f min\n', iInterval, samples_interval_starts(iInterval)/samples_per_min, samples_interval_stops(iInterval)/samples_per_min);
 end
@@ -197,12 +207,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate power for intervals
 
-[noreref_psd, f] = extract_psd(lfp, samples_intervals, lfpStruct.samplingFreq);
+[noreref_psd, f] = extract_psd(noreref_lfp, samples_intervals, noreref.samplingFreq);
+processed_psd = noreref_psd;
+processed_psd(~cleaning_info.is_good,:,:) = NaN;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate variance for intervals
 
-[noreref_var, noreref_rms, interval_frac_nan] = extract_var(lfp, samples_intervals, lfpStruct.samplingFreq, microDevFilts, nan_mask);
+[noreref_var, noreref_rms, interval_frac_nan] = extract_var(noreref_lfp, samples_intervals, noreref.samplingFreq, microDevFilts, nan_mask);
 
 createdDate = datestr(datetime('now'));
 
@@ -214,6 +227,7 @@ noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', 
           '     psd                      - a (chan x timepoint x freq) matrix with power values in decibels at each time window (described by timepoints min and window_min), calculated with pwelch' newline ...
           '     var                      - a (chan x timepoint x subwindow) var(chan, timepoint, :) describes the distribution of variance values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
           '     rms                      - a (chan x timepoint x subwindow) rms(chan, timepoint, :) describes the distribution of rms values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
+          '     cleaning_info            - copy of the variance.csv that is produced from the lfp pipeline' newline ...
           '     freqs                    - a vector containing frequency labels for values in the 3rd dimension of psd' newline ...
           '     timepoints_samples       - a vector with timepoints (in unit samples) corresponding the center of each time window used in psd, var, and rms' newline ...
           '     timepoints_min           - a vector with timepoints (in unit minutes) corresponding the center of each time window used in psd, var, and rms' newline ...
@@ -231,12 +245,13 @@ noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', 
 psdStruct = struct;
 psdStruct.readme = noreref_readme;
 psdStruct.createdDate = createdDate;
-psdStruct.chanID = lfpStruct.chanIDperNSP{1};
+psdStruct.chanID = noreref.chanIDperNSP{1};
 psdStruct.frac_nan = frac_nan;
 psdStruct.interval_frac_nan = interval_frac_nan;
 psdStruct.psd = noreref_psd;
 psdStruct.var = noreref_var;
 psdStruct.rms = noreref_rms;
+psdStruct.cleaning_info = cleaning_info;
 psdStruct.freqs = f;
 psdStruct.timepoints_samples = samples_intervals_midpoints;
 psdStruct.timepoints_min = round(samples_intervals_midpoints ./ samples_per_min, 2);
@@ -244,14 +259,14 @@ psdStruct.timepoints_daily_window = timepoints_daily_window;
 psdStruct.window_min = min_per_window;
 psdStruct.frac_samples_covered = frac_samples_covered;
 psdStruct.minWindowCoverage = minWindowCoverage;
-psdStruct.sessDurMin = lfpStruct.sessDurMin;
-psdStruct.sessStr = lfpStruct.sessStr;
-psdStruct.samplingFreq = lfpStruct.samplingFreq;
+psdStruct.sessDurMin = noreref.sessDurMin;
+psdStruct.sessStr = noreref.sessStr;
+psdStruct.samplingFreq = noreref.samplingFreq;
 psdStruct.rerefType = 'lfp_noreref';
-psdStruct.jackTableUsed = lfpStruct.jackTableUsed;
-psdStruct.startTime_datenum = lfpStruct.startTime_datenum;
+psdStruct.jackTableUsed = noreref.jackTableUsed;
+psdStruct.startTime_datenum = noreref.startTime_datenum;
 
-noreref_psd_fpath = [ psd_path '/noreref.mat' ];
+noreref_psd_fpath = [ psd_path '/psd.mat' ];
 save(noreref_psd_fpath, 'psdStruct');
 
 %make plots
@@ -311,10 +326,16 @@ end
 
 
 
-function [psd, f] = extract_psd(lfp, samples_intervals, samplingFreq)
+function [psd, f] = extract_psd(lfp, samples_intervals, samplingFreq, cleaning_info)
+
+if nargin < 4
+   cleaning_info = {}; 
+end
+
 
 lfp_channel_num = size(lfp, 1);
 num_intervals = size(samples_intervals, 1);
+
 
 pwelch_window = samplingFreq * 3; % 3 second window size
 pwelch_overlap = fix(pwelch_window/2); % 50 percent overlap
@@ -328,7 +349,7 @@ current_interval_data = lfp(:, current_interval(1):current_interval(2) );
 
 
 
-psd = zeros(lfp_channel_num, num_intervals, length(f));
+psd = nan(lfp_channel_num, num_intervals, length(f));
 
 for iInterval = 1:num_intervals
    
@@ -344,6 +365,11 @@ for iInterval = 1:num_intervals
     for iChan = 1:lfp_channel_num
         psd(iChan, iInterval, :) = power_decibels(:, iChan);
     end
+end
+
+% nan bad channels if passed in
+if ~isempty(cleaning_info)
+   psd(~cleaning_info.is_good, :, :) = NaN; 
 end
 
 end
@@ -369,8 +395,8 @@ lfp_channel_num = size(lfp, 1);
 num_intervals = size(samples_intervals, 1);
 num_dev = size(microDevFilts, 2);
 
-noreref_var = zeros(lfp_channel_num, num_intervals, subwindow_count);
-noreref_rms = zeros(lfp_channel_num, num_intervals, subwindow_count);
+noreref_var = nan(lfp_channel_num, num_intervals, subwindow_count);
+noreref_rms = nan(lfp_channel_num, num_intervals, subwindow_count);
 interval_nan_frac = zeros(num_dev, num_intervals);
 
 for iInterval = 1:num_intervals
