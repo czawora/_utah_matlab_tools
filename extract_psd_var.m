@@ -116,6 +116,8 @@ if noreref.sessDurMin < min_per_window
 end
 
 noreref_lfp = double(noreref.lfp{1});
+processed_lfp = double(processed.lfp{1});
+
 lfp_sample_num = size(noreref_lfp, 2);
 
 samples_per_min = noreref.samplingFreq * 60;
@@ -203,19 +205,37 @@ for iInterval = 1:length(samples_interval_starts)
     fprintf('interval %d: %0.2f - %0.2f min\n', iInterval, samples_interval_starts(iInterval)/samples_per_min, samples_interval_stops(iInterval)/samples_per_min);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% apply reref to processed
+
+for iDev = 1:length(unique_microDevNums)
+
+    current_dev = unique_microDevNums(iDev);
+    current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
+
+    current_global_mean = processed.glob_sig_good{current_dev};
+    
+    current_global_mean(isnan(current_global_mean)) = 0;
+    
+    for iFilt = 1:length(current_dev_filt)
+        if current_dev_filt(iFilt)
+            processed_lfp(iFilt, :) = processed_lfp(iFilt, :) - current_global_mean;
+        end
+    end
+    
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate power for intervals
 
 [noreref_psd, f] = extract_psd(noreref_lfp, samples_intervals, noreref.samplingFreq);
-processed_psd = noreref_psd;
-processed_psd(~cleaning_info.is_good,:,:) = NaN;
-
+[processed_psd, ~] = extract_psd(processed_lfp, samples_intervals, noreref.samplingFreq, cleaning_info);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate variance for intervals
 
 [noreref_var, noreref_rms, interval_frac_nan] = extract_var(noreref_lfp, samples_intervals, noreref.samplingFreq, microDevFilts, nan_mask);
+[processed_var, processed_rms, ~] = extract_var(processed_lfp, samples_intervals, processed.samplingFreq, microDevFilts, nan_mask);
 
 createdDate = datestr(datetime('now'));
 
@@ -224,9 +244,9 @@ noreref_readme = ['this psd.mat file, generated ' sprintf('%s', createdDate) ', 
           '     chanID                   - a table corresponding to the channel data in psd, var, and rms' newline ...
           '     frac_nan                 - vector with value for each microDevNum (indexed in sorted order) indicating the fraction of NaNs found in processed.mat' newline ...
           '     interval_nan_frac        - a (num_microDev x timepoint) matrix with fraction of NaNs in each timepoint per microDev' newline ...
-          '     psd                      - a (chan x timepoint x freq) matrix with power values in decibels at each time window (described by timepoints min and window_min), calculated with pwelch' newline ...
-          '     var                      - a (chan x timepoint x subwindow) var(chan, timepoint, :) describes the distribution of variance values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
-          '     rms                      - a (chan x timepoint x subwindow) rms(chan, timepoint, :) describes the distribution of rms values calculated using non-overlapping subwindows for the indexed timepoint and channel' newline ...
+          '     psd (noreref, processed) - a (chan x timepoint x freq) matrix with power values in decibels at each time window (described by timepoints min and window_min), calculated with pwelch. Processed lfp had glob_sig_good subtracted before psd calc' newline ...
+          '     var (noreref, processed) - a (chan x timepoint x subwindow) var(chan, timepoint, :) describes the distribution of variance values calculated using non-overlapping subwindows for the indexed timepoint and channel. Processed lfp had glob_sig_good subtracted before psd calc' newline ...
+          '     rms (noreref, processed) - a (chan x timepoint x subwindow) rms(chan, timepoint, :) describes the distribution of rms values calculated using non-overlapping subwindows for the indexed timepoint and channel. Processed lfp had glob_sig_good subtracted before psd calc' newline ...
           '     cleaning_info            - copy of the variance.csv that is produced from the lfp pipeline' newline ...
           '     freqs                    - a vector containing frequency labels for values in the 3rd dimension of psd' newline ...
           '     timepoints_samples       - a vector with timepoints (in unit samples) corresponding the center of each time window used in psd, var, and rms' newline ...
@@ -248,9 +268,12 @@ psdStruct.createdDate = createdDate;
 psdStruct.chanID = noreref.chanIDperNSP{1};
 psdStruct.frac_nan = frac_nan;
 psdStruct.interval_frac_nan = interval_frac_nan;
-psdStruct.psd = noreref_psd;
-psdStruct.var = noreref_var;
-psdStruct.rms = noreref_rms;
+psdStruct.noreref_psd = noreref_psd;
+psdStruct.noreref_var = noreref_var;
+psdStruct.noreref_rms = noreref_rms;
+psdStruct.processed_psd = processed_psd;
+psdStruct.processed_var = processed_var;
+psdStruct.processed_rms = processed_rms;
 psdStruct.cleaning_info = cleaning_info;
 psdStruct.freqs = f;
 psdStruct.timepoints_samples = samples_intervals_midpoints;
