@@ -213,13 +213,13 @@ for iDev = 1:length(unique_microDevNums)
     current_dev = unique_microDevNums(iDev);
     current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
 
-    current_global_mean = processed.glob_sig_good{current_dev};
+    current_global_mean = double(processed.glob_sig_good{current_dev});
     
     current_global_mean(isnan(current_global_mean)) = 0;
     
     for iFilt = 1:length(current_dev_filt)
         if current_dev_filt(iFilt)
-            processed_lfp(iFilt, :) = processed_lfp(iFilt, :) - current_global_mean;
+            processed_lfp(iFilt, :) = processed_lfp(iFilt, :) - current_global_mean';
         end
     end
     
