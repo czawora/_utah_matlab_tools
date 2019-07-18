@@ -313,6 +313,8 @@ for iDevNum = 1:length(num_unique_microDevNum)
     current_microDevNum = num_unique_microDevNum(iDevNum);
     current_microDevNum_filt = (psdStruct.chanID{:,'MicroDevNum'} == current_microDevNum);
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    % noreref    
     figure();
     set(gcf,'color','w');
     set(gcf,'visible','off');
@@ -323,7 +325,7 @@ for iDevNum = 1:length(num_unique_microDevNum)
 
         subplot(subplot_rows, subplot_cols, iTime);
 
-        current_psd = squeeze(psdStruct.psd(current_microDevNum_filt, iTime, :));
+        current_psd = squeeze(psdStruct.noreref_psd(current_microDevNum_filt, iTime, :));
         current_timepoint_frac_nan = psdStruct.interval_frac_nan(iDevNum, iTime);
 
         plot(psdStruct.freqs, current_psd);
@@ -341,7 +343,41 @@ for iDevNum = 1:length(num_unique_microDevNum)
 
     tightfig();
     set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
-    print(gcf,[psd_path '/' sprintf('microDev%d_psd.png', current_microDevNum)],'-dpng','-r300');
+    print(gcf,[psd_path '/' sprintf('noreref_microDev%d_psd.png', current_microDevNum)],'-dpng','-r300');
+    close(gcf);
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+    % processed
+    figure();
+    set(gcf,'color','w');
+    set(gcf,'visible','off');
+    set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.01, 0.01, 1, 0.96]);
+
+
+    for iTime = 1:num_timepoints
+
+        subplot(subplot_rows, subplot_cols, iTime);
+
+        current_psd = squeeze(psdStruct.processed_psd(current_microDevNum_filt, iTime, :));
+        current_timepoint_frac_nan = psdStruct.interval_frac_nan(iDevNum, iTime);
+
+        plot(psdStruct.freqs, current_psd);
+
+        xlim([0 200]);
+
+        if iTime == 1
+            xlabel('freq (Hz)');
+            ylabel('power (decibels)');
+        end
+
+        title(sprintf('minute %0.2f (frac nan %0.2f)', psdStruct.timepoints_min(iTime), current_timepoint_frac_nan));
+
+    end
+
+    tightfig();
+    set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
+    print(gcf,[psd_path '/' sprintf('processed_microDev%d_psd.png', current_microDevNum)],'-dpng','-r300');
     close(gcf);
 end
 
