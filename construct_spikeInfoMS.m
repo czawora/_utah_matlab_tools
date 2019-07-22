@@ -29,7 +29,7 @@ p.addParameter('clip_features_fname', 'clip_features.mda', @ischar);
 
 p.addParameter('noise_overlap_max', '0.1', @ischar);
 p.addParameter('snr_min', '1', @ischar);
-p.addParameter('removeLargeAmpUnits', '1', @ischar);
+p.addParameter('removeLargeAmpUnits', '0', @ischar);
 
 parse(p, varargin{:});
 
@@ -142,8 +142,9 @@ if ~skip_plots
                           'mda_fpath', loaded_chan(iChan).hp_reref_whiten_fpath, ...
                           'saveDir', sortfigs_saveRoot, ...
                           'unit_names_fpath', [loaded_chan(iChan).chan_dir '/unit_names.mat'], ...
-                          'good_units_fpath', [loaded_chan(iChan).chan_dir '/good_units.mat']);
-
+                          'good_units_fpath', [loaded_chan(iChan).chan_dir '/good_units.mat'], ...
+                          'large_amp_units_fpath', [loaded_chan(iChan).chan_dir '/large_amp_units.mat'], ...
+                          'removeLargeAmpUnits', '1');
     end
 
 end
@@ -288,9 +289,9 @@ writetable(sessUnitSummary, saveDir_sortSummary);
 
 fprintf('deleting split files\n');
 
-rmdir(split_path, 's');
-rmdir([session_path '/splits_raw'], 's');
-rmdir([session_path '/splits_spike'], 's');
+%rmdir(split_path, 's');
+%rmdir([session_path '/splits_raw'], 's');
+%rmdir([session_path '/splits_spike'], 's');
 
 
 fprintf('construct_spikeInfoMS -- done\n');
@@ -301,8 +302,10 @@ end
 
 function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractInfoStr, waveForm, waveForm_all, waveForm_raw, waveForm_raw_all, waveForm_sort, waveForm_sort_all, metrics, aux] = filter_units(loaded_chan, noise_overlap_max, snr_min, removeLargeAmpUnits, split_jacksheet)
     
+    largeAmpThrehold_ifSet = 5000;
+
     if removeLargeAmpUnits 
-        amp_thresh = 5000;
+        amp_thresh = largeAmpThrehold_ifSet;
     else
         amp_thresh = Inf;
     end
@@ -313,7 +316,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % define outputs 
     
-    sessUnitSummary_varNames = {'NSxChanName' 'PhysChanNum' 'UnitNum' 'ChanUnitName' 'DeviceNum' 'snr' 'noise_overlap', 'num_spikes'};
+    sessUnitSummary_varNames = {'NSxChanName' 'PhysChanNum' 'UnitNum' 'ChanUnitName' 'DeviceNum' 'snr' 'noise_overlap', 'isolation', 'num_spikes'};
     sessUnitSummary = table([],[],[],[],[],[],[],[], 'VariableNames', sessUnitSummary_varNames);
     
     sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
@@ -352,10 +355,12 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     
     metrics_readme = [ 'spike Info metrics contains: ' newline ...
                        'mountainsort is a struct containing noise_overlap, peak_amp, peak_noise, peak_snr . See original paper for all details https://doi.org/10.1016/j.neuron.2017.08.030' newline ...
-                       '   noise_overlap -- (0 - 1) 0 indicating no overlap with generated noise cluster, 1 indicating unit indistinguishable from the generated noise cluster' newline ...
+                       '   noise_overlap (per unit, computed w/ reference to single channel) -- (0 - 1) 0 indicating no overlap with generated noise cluster, 1 indicating unit indistinguishable from the generated noise cluster' newline ...
                        '   peak_amp -- average value at peak/trough of unit waveform' newline ...
                        '   peak_noise -- sd of values at peak/trough of unit waveform' newline ...
                        '   peak_snr -- peak_amp/peak_noise' newline ...
+                       '   isolation (per unit, computed w/ reference to single channel) -- (0 - 1) 0 indicating no overlap with other super-treshold clusters, 1 indicating unit indistinguishable from other super-treshold clusters' newline ...
+                       '   pair_overlap (per channel, computed w/ reference to single channel) -- table containing 2 columns indicating original unit names, 2 columns with post-filter unit names, and overlap score.' newline ...
                        'ISIcontamination   -- vector of fraction of ISIs that were less than absolute refractory period of 2ms' newline ...
                        'spkRate_eachMinute -- cell array with time series of spike rate (spikes/sec) per 1min interval for duration of recording. This is a first order stability measure.' ];
     
@@ -366,16 +371,17 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     metrics.spkRate_eachMinute = {};
 
     metrics.mountainsort = struct;
-%     metrics.mountainsort.isolation = [];
+    metrics.mountainsort.isolation = [];
     metrics.mountainsort.noise_overlap = [];
     metrics.mountainsort.peak_amp = [];
     metrics.mountainsort.peak_noise = [];
     metrics.mountainsort.peak_snr = [];
-%     metrics.mountainsort.pair_overlap = [];
+    metrics.mountainsort.pair_overlap = {};
     
     aux = struct;
     aux.multi_unit_channel_present = 0;
-    
+    aux.raw_isol_metrics = {};
+    aux.raw_isol_pair_metrics = {};
 %     plotChannelSpike_map = struct;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,17 +403,42 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         chan_SampFreq = split_jacksheet{iChan,'SampFreq'};
         sampFreq2MS_factor = chan_SampFreq/1000;
         
+        
+        
         % isol_metrics labels
         channel_isol_metrics_labels = [ loaded_chan(iChan).isol_metrics.clusters.label ];
+        
+        
+        
+        % split isol_pair_metrics label column
+        pair_metrics_labels = {isol_pair_metrics.cluster_pairs.label};
+        pair_metrics_table = table(cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), nan(length(pair_metrics_labels), 1), ...
+            'VariableNames', {'label1', 'label2', 'renamed_label1', 'renamed_label2', 'overlap'});
+        
+        for iPair = 1:length(pair_metrics_labels)
+            
+            labels_split = strsplit(pair_metrics_labels{iPair}, ',');
+            
+            pair_metrics_table{iPair, 'label1'} = labels_split(1);
+            pair_metrics_table{iPair, 'label2'} = labels_split(2);            
+            pair_metrics_table{iPair, 'overlap'} = isol_pair_metrics.cluster_pairs(iPair).metrics.overlap;
+        end
+        
+        
+        
         
         % incrementers
         num_channel_units_added = 0;
         num_channel_unit_spikes = 0;
         
         first_channel_unit = 1;
-        
+                
         good_units = [];
+        large_amp_units = [];
         
+        
+        num_noise_units_current_chan = 0;
+
         
         for iUnit = 1:num_units
             
@@ -421,6 +452,16 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             unit_snr = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.peak_snr;
             unit_noise_overlap = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.noise_overlap;
             
+            
+            %not for exclusion in spikeInfo, only exclusion in plotting
+            if unit_amp > largeAmpThrehold_ifSet
+                large_amp_units = [ large_amp_units 1];
+            else
+                large_amp_units = [ large_amp_units 0];
+            end
+            
+            isol_pair_relabel = '';
+                        
             if (unit_snr >= snr_min) && (unit_noise_overlap <= noise_overlap_max) && (unit_amp < amp_thresh)
                 
                 good_units = [good_units 1];
@@ -446,6 +487,9 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 
                 sessUniqueUnitID = [ sessUniqueUnitID;  table(PhysChanNum, UnitNum, DeviceNum, CombinedNum, {ChanUnitName}, {NSxChanName}, {NSxFileName}, {NSPsuffix}, {ChanNameNew}, 'VariableNames', sessUniqueUnitID_varNames)];
                 
+                
+                % set ChanUnitName as the renamed_label
+                isol_pair_relabel = ChanUnitName;
                 
                 % check if this channel needs to be added to jackTableUsed
                 
@@ -528,9 +572,10 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 metrics.mountainsort.peak_amp(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_amp;
                 metrics.mountainsort.peak_noise(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_noise;
                 metrics.mountainsort.peak_snr(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.peak_snr;
+                metrics.mountainsort.isolation(num_total_units_added) = loaded_chan(iChan).isol_metrics.clusters(which_isol_metrics_idx).metrics.isolation;
 
                 
-                sessUnitSummary = [sessUnitSummary; table({NSxChanName},PhysChanNum,UnitNum,{ChanUnitName},DeviceNum, metrics.mountainsort.peak_snr(num_total_units_added),metrics.mountainsort.noise_overlap(num_total_units_added), sum(firings_filt) ,'VariableNames', sessUnitSummary_varNames)];
+                sessUnitSummary = [sessUnitSummary; table({NSxChanName},PhysChanNum,UnitNum,{ChanUnitName},DeviceNum, metrics.mountainsort.peak_snr(num_total_units_added),metrics.mountainsort.noise_overlap(num_total_units_added), metrics.mountainsort.isolation(num_total_units_added), sum(firings_filt) ,'VariableNames', sessUnitSummary_varNames)];
 
 
                 % remember this unit passed the filter
@@ -543,9 +588,23 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 
                 good_units = [good_units 0];
                 
+                isol_pair_relabel = [ split_jacksheet{iChan, 'ChanNameNew'}{1} '_' sprintf('%03d', num_noise_units_current_chan)];
+                
+                num_noise_units_current_chan = num_noise_units_current_chan + 1;
+                
             end
             
+            % relabel occurences of this unit in isol_pair_metrics table
+
+            label1_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label1);
+            label2_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label2);
+
+            pair_metrics_table{label1_matches, 'renamed_label1'} = {isol_pair_relabel};
+            pair_metrics_table{label2_matches, 'renamed_label2'} = {isol_pair_relabel};
+
+            
         end
+        
         
         if num_channel_units_added > 0
         
@@ -554,10 +613,11 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
 
         end
         
-        
-%         plotChannelSpike_map(iChan).unit_names = sessUniqueUnitID{:, 'ChanUnitName'};
-%         plotChannelSpike_map(iChan).good_units = good_units;
        
+        aux.raw_isol_metrics{iChan} = loaded_chan(iChan).isol_metrics;
+        aux.raw_isol_pair_metrics{iChan} = loaded_chan(iChan).isol_pair_metrics;
+        
+        metrics.mountainsort.pair_overlap{iChan} = pair_metrics_table;
         
         % add in pairwise isolation scores for units passing the filter
        
@@ -567,9 +627,11 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
        
         unit_names = sessUniqueUnitID{:, 'ChanUnitName'};
         good_units_filt = good_units;
+        large_amp_units_filt = large_amp_units;
         
         save([loaded_chan(iChan).chan_dir '/good_units.mat'], 'good_units_filt');
         save([loaded_chan(iChan).chan_dir '/unit_names.mat'], 'unit_names');
+        save([loaded_chan(iChan).chan_dir '/large_amp_units.mat'], 'large_amp_units_filt');
         
     end
 

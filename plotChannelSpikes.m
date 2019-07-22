@@ -31,7 +31,8 @@ function plotChannelSpikes(varargin)
         p.addParameter('mda', []);
         
         p.addParameter('unit_names_fpath', '');
-        p.addParameter('good_units_fpath', '')
+        p.addParameter('good_units_fpath', '');
+        p.addParameter('large_amp_units_fpath', '');
         
         p.addParameter('saveDir', '', @ischar);
         
@@ -72,6 +73,7 @@ function plotChannelSpikes(varargin)
         
         unit_names_fpath = p.Results.unit_names_fpath;
         good_units_fpath = p.Results.good_units_fpath;
+        large_amp_units_fpath = p.Results.large_amp_units_fpath;
         
         saveDir = p.Results.saveDir;
                 
@@ -169,10 +171,19 @@ function plotChannelSpikes(varargin)
     
         load(unit_names_fpath);
         
+        if ~exit(large_amp_units_fpath, 'file')
+           error('%s is not a valid file', large_amp_units_fpath);
+        end
+        
+        load(large_amp_units_fpath);
+        
         if length(good_units_filt) ~= length(unique(firings(3,:)))
            error('length(good_units_filt) ~= length(unique(firings(3,:)))'); 
         end
         
+        if length(large_amp_units_filt) ~= length(unique(firings(3,:)))
+           error('length(good_units_filt) ~= length(unique(firings(3,:)))'); 
+        end
         
         %clip_length
         clip_length = size(clips, 2);
@@ -255,14 +266,22 @@ function plotChannelSpikes(varargin)
         
         for iFilt = 1:length(unique_units)
            
+            if removeLargeAmpUnits
+                if large_amp_units_filt(iFilt)
+                   continue; 
+                end
+            end
+            
             if good_units_filt(iFilt) == 1
                
                 good_units(length(good_units) + 1) = unique_units(iFilt);
                 good_units_names{length(good_units_names) + 1} = unit_names{length(good_units)};
+                
             else
                 
                 noise_units(length(noise_units) + 1) = unique_units(iFilt);
                 noise_units_names{length(noise_units_names) + 1} = ['noise' num2str(length(noise_units_names) + 1)];
+                
             end
             
         end
