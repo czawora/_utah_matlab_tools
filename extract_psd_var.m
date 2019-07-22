@@ -51,6 +51,19 @@ if isempty(processed_ls)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% load variance.csv
+
+cleaning_info_fpath = [variance_ls.folder '/' variance_ls.name];
+cleaning_info = readtable(cleaning_info_fpath);
+
+if all(~cleaning_info.is_good)
+    ignore_fid = fopen([psd_path '/_ignore_me.txt'], 'w');
+    fprintf(ignore_fid, 'all channels marked as not not_good in variance.csv\n');
+    fclose(ignore_fid);
+    return;
+end
+
 % load noreref
 
 noreref_fpath = [noreref_ls.folder '/' noreref_ls.name];
@@ -63,10 +76,6 @@ processed_fpath = [processed_ls.folder '/' processed_ls.name];
 processed = load(processed_fpath);
 processed = processed.lfpStruct;
 
-% load variance.csv
-
-cleaning_info_fpath = [variance_ls.folder '/' variance_ls.name];
-cleaning_info = readtable(cleaning_info_fpath);
 
 % count NaNs on each device
 
