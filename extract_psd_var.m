@@ -239,8 +239,8 @@ for iDev = 1:length(unique_microDevNums)
     current_dev = unique_microDevNums(iDev);
     current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
 
-    % if this is empty, then the data containes too many NaNs to have merited 'processing'
-    if isempty(processed.glob_sig_good{current_dev})
+    % if this is true, then the data containes too many NaNs to have merited 'processing'
+    if all(~cleaning_info.is_good(current_dev_filt))
         tooManyNaN_devs = [ tooManyNaN_devs current_dev ];
         continue;
     end
