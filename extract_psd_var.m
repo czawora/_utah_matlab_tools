@@ -214,14 +214,37 @@ for iInterval = 1:length(samples_interval_starts)
     fprintf('interval %d: %0.2f - %0.2f min\n', iInterval, samples_interval_starts(iInterval)/samples_per_min, samples_interval_stops(iInterval)/samples_per_min);
 end
 
+
+
+% noreref
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% calculate power for intervals
+
+[noreref_psd, f] = extract_psd(noreref_lfp, samples_intervals, noreref.samplingFreq);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% calculate variance for intervals
+
+[noreref_var, noreref_rms, interval_frac_nan] = extract_var(noreref_lfp, samples_intervals, noreref.samplingFreq, microDevFilts, nan_mask);
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % apply reref to processed
 
+tooManyNaN_devs = [];
 for iDev = 1:length(unique_microDevNums)
 
     current_dev = unique_microDevNums(iDev);
     current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
 
+    % if this is empty, then the data containes too many NaNs to have merited 'processing'
+    if isempty(processed.glob_sig_good{current_dev})
+        tooManyNaN_devs = [ tooManyNaN_devs current_dev ];
+        continue;
+    end
+    
     current_global_mean = double(processed.glob_sig_good{current_dev});
     
     current_global_mean(isnan(current_global_mean)) = 0;
@@ -234,17 +257,29 @@ for iDev = 1:length(unique_microDevNums)
     
 end
 
+% processed
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate power for intervals
 
-[noreref_psd, f] = extract_psd(noreref_lfp, samples_intervals, noreref.samplingFreq);
 [processed_psd, ~] = extract_psd(processed_lfp, samples_intervals, noreref.samplingFreq, cleaning_info);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate variance for intervals
 
-[noreref_var, noreref_rms, interval_frac_nan] = extract_var(noreref_lfp, samples_intervals, noreref.samplingFreq, microDevFilts, nan_mask);
 [processed_var, processed_rms, ~] = extract_var(processed_lfp, samples_intervals, processed.samplingFreq, microDevFilts, nan_mask);
+
+% NaN the devs with too many NaNs to create a processed.
+for iDev = 1:length(tooManyNaN_devs)
+
+    current_dev = tooManyNaN_devs(iDev);
+    current_dev_filt = (processed.chanIDperNSP{1}{:, 'MicroDevNum'} == current_dev);
+
+    processed_psd(current_dev_filt, :, :) = NaN;
+    processed_var(current_dev_filt, :, :) = NaN;
+    processed_rms(current_dev_filt, :, :) = NaN;
+end
+
+
 
 createdDate = datestr(datetime('now'));
 
