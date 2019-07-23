@@ -409,22 +409,26 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         channel_isol_metrics_labels = [ loaded_chan(iChan).isol_metrics.clusters.label ];
         
         
+        if ~isempty(isol_pair_metrics.cluster_pairs)
+
+            % split isol_pair_metrics label column
+            pair_metrics_labels = {isol_pair_metrics.cluster_pairs.label};
+            pair_metrics_table = table(cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), nan(length(pair_metrics_labels), 1), ...
+                'VariableNames', {'label1', 'label2', 'renamed_label1', 'renamed_label2', 'overlap'});
+
+            for iPair = 1:length(pair_metrics_labels)
+
+                labels_split = strsplit(pair_metrics_labels{iPair}, ',');
+
+                pair_metrics_table{iPair, 'label1'} = labels_split(1);
+                pair_metrics_table{iPair, 'label2'} = labels_split(2);            
+                pair_metrics_table{iPair, 'overlap'} = isol_pair_metrics.cluster_pairs(iPair).metrics.overlap;
+            end
         
-        % split isol_pair_metrics label column
-        pair_metrics_labels = {isol_pair_metrics.cluster_pairs.label};
-        pair_metrics_table = table(cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), nan(length(pair_metrics_labels), 1), ...
-            'VariableNames', {'label1', 'label2', 'renamed_label1', 'renamed_label2', 'overlap'});
-        
-        for iPair = 1:length(pair_metrics_labels)
+        else
             
-            labels_split = strsplit(pair_metrics_labels{iPair}, ',');
-            
-            pair_metrics_table{iPair, 'label1'} = labels_split(1);
-            pair_metrics_table{iPair, 'label2'} = labels_split(2);            
-            pair_metrics_table{iPair, 'overlap'} = isol_pair_metrics.cluster_pairs(iPair).metrics.overlap;
+            pair_metrics_table = table();
         end
-        
-        
         
         
         % incrementers
@@ -594,15 +598,18 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
                 
             end
             
-            % relabel occurences of this unit in isol_pair_metrics table
-
-            label1_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label1);
-            label2_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label2);
-
-            pair_metrics_table{label1_matches, 'renamed_label1'} = {isol_pair_relabel};
-            pair_metrics_table{label2_matches, 'renamed_label2'} = {isol_pair_relabel};
-
             
+            if ~isempty(pair_metrics_table)
+                
+                % relabel occurences of this unit in isol_pair_metrics table
+
+                label1_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label1);
+                label2_matches = cellfun(@(x) isequal(x, num2str(unit_firings_name)), pair_metrics_table.label2);
+
+                pair_metrics_table{label1_matches, 'renamed_label1'} = {isol_pair_relabel};
+                pair_metrics_table{label2_matches, 'renamed_label2'} = {isol_pair_relabel};
+
+            end
         end
         
         
