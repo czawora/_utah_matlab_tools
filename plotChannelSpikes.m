@@ -286,7 +286,7 @@ function plotChannelSpikes(varargin)
             
         end
         
-        total_unit_num = length(unique_units);
+        total_unit_num = length(good_units) + length(noise_units);
        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %plotting settings and layout
