@@ -317,7 +317,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
     % define outputs 
     
     sessUnitSummary_varNames = {'NSxChanName' 'PhysChanNum' 'UnitNum' 'ChanUnitName' 'DeviceNum' 'snr' 'noise_overlap', 'isolation', 'num_spikes'};
-    sessUnitSummary = table([],[],[],[],[],[],[],[], 'VariableNames', sessUnitSummary_varNames);
+    sessUnitSummary = table([],[],[],[],[],[],[],[], [], 'VariableNames', sessUnitSummary_varNames);
     
     sessUniqueUnitID_varNames = {'PhysChanNum' 'UnitNum' 'DeviceNum' 'CombinedNum' 'ChanUnitName' 'NSxChanName' 'NSxFileName' 'NSPsuffix' 'ChanNameNew'};
     sessUniqueUnitID = table([], [], [], [], [], [], [], [], [], 'VariableNames', sessUniqueUnitID_varNames);
