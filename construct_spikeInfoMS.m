@@ -412,7 +412,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         if ~isempty(isol_pair_metrics.cluster_pairs)
 
             % split isol_pair_metrics label column
-            pair_metrics_labels = {isol_pair_metrics.cluster_pairs.label};
+            pair_metrics_labels = {loaded_chan(iChan).isol_pair_metrics.cluster_pairs.label};
             pair_metrics_table = table(cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), cell(length(pair_metrics_labels), 1), nan(length(pair_metrics_labels), 1), ...
                 'VariableNames', {'label1', 'label2', 'renamed_label1', 'renamed_label2', 'overlap'});
 
@@ -422,7 +422,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
 
                 pair_metrics_table{iPair, 'label1'} = labels_split(1);
                 pair_metrics_table{iPair, 'label2'} = labels_split(2);            
-                pair_metrics_table{iPair, 'overlap'} = isol_pair_metrics.cluster_pairs(iPair).metrics.overlap;
+                pair_metrics_table{iPair, 'overlap'} = loaded_chan(iChan).isol_pair_metrics.cluster_pairs(iPair).metrics.overlap;
             end
         
         else
