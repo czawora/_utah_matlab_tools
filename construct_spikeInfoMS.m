@@ -289,9 +289,9 @@ writetable(sessUnitSummary, saveDir_sortSummary);
 
 fprintf('deleting split files\n');
 
-%rmdir(split_path, 's');
-%rmdir([session_path '/splits_raw'], 's');
-%rmdir([session_path '/splits_spike'], 's');
+rmdir(split_path, 's');
+rmdir([session_path '/splits_raw'], 's');
+rmdir([session_path '/splits_spike'], 's');
 
 
 fprintf('construct_spikeInfoMS -- done\n');
@@ -409,7 +409,7 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
         channel_isol_metrics_labels = [ loaded_chan(iChan).isol_metrics.clusters.label ];
         
         
-        if ~isempty(isol_pair_metrics.cluster_pairs)
+        if ~isempty(loaded_chan(iChan).isol_pair_metrics.cluster_pairs)
 
             % split isol_pair_metrics label column
             pair_metrics_labels = {loaded_chan(iChan).isol_pair_metrics.cluster_pairs.label};
