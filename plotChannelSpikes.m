@@ -171,7 +171,7 @@ function plotChannelSpikes(varargin)
     
         load(unit_names_fpath);
         
-        if ~exit(large_amp_units_fpath, 'file')
+        if ~exist(large_amp_units_fpath, 'file')
            error('%s is not a valid file', large_amp_units_fpath);
         end
         
@@ -1429,6 +1429,7 @@ function plotChannelSpikes(varargin)
         set(gcf, 'InvertHardcopy', 'off','PaperUnits','inches','PaperPosition',[0,0,25,19],'PaperPositionMode','auto');
         fprintf('save fig %s\n', datetime('now'));
 
+        pause(1);
         print(gcf,[saveDir '/' session_name_underscore '_' current_chan_underscore '.png'],'-dpng','-r300');
         
         %export_fig([ms_figDir '/' session_name_no_spaces '_' current_chan '.bmp'], '-bmp', '-painters');
