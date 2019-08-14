@@ -149,7 +149,7 @@ if ~skip_plots
         % then none of them will pass filters for plotting and the code
         % will break. To prevent this, check if any of them are not large
         % amp. 
-        if all(large_amp_units_filt)
+        if ~all(large_amp_units_filt)
         
             plotChannelSpikes('session_name', session_name, ...
                               'channel_name', [chan_name '_ampFilter5000'], ...
@@ -164,7 +164,7 @@ if ~skip_plots
                               'unit_names_fpath', [loaded_chan(iChan).chan_dir '/unit_names.mat'], ...
                               'good_units_fpath', [loaded_chan(iChan).chan_dir '/good_units.mat'], ...
                               'large_amp_units_fpath', [loaded_chan(iChan).chan_dir '/large_amp_units.mat'], ...
-                              'removeLargeAmpUnits', '0');
+                              'removeLargeAmpUnits', '1');
                       
         end    
             
@@ -181,7 +181,7 @@ if ~skip_plots
                           'unit_names_fpath', [loaded_chan(iChan).chan_dir '/unit_names.mat'], ...
                           'good_units_fpath', [loaded_chan(iChan).chan_dir '/good_units.mat'], ...
                           'large_amp_units_fpath', [loaded_chan(iChan).chan_dir '/large_amp_units.mat'], ...
-                          'removeLargeAmpUnits', '1');
+                          'removeLargeAmpUnits', '0');
         
     end
 
