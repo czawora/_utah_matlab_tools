@@ -1,4 +1,4 @@
-function onlyLargeAmpUnits = plotChannelSpikes(varargin)
+function plotChannelSpikes(varargin)
 
       fprintf('starting plotChannelSpikes %s\n', datetime('now'));
 
@@ -176,6 +176,11 @@ function onlyLargeAmpUnits = plotChannelSpikes(varargin)
         end
         
         load(large_amp_units_fpath);
+        
+        if ~any(large_amp_units_filt)
+            onlyLargeAmpUnits = 1;
+            return;
+        end
         
         if length(good_units_filt) ~= length(unique(firings(3,:)))
            error('length(good_units_filt) ~= length(unique(firings(3,:)))'); 
