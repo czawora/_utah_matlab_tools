@@ -510,6 +510,10 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             
             isol_pair_relabel = '';
             
+            loaded_chan(iChan).chan_dir
+            iUnit
+            unit_firings_name
+            
             unit_snr
             snr_min
             unit_noise_overlap
