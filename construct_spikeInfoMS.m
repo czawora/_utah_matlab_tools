@@ -510,16 +510,16 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             
             isol_pair_relabel = '';
             
-            loaded_chan(iChan).chan_dir
-            iUnit
-            unit_firings_name
-            
-            unit_snr
-            snr_min
-            unit_noise_overlap
-            noise_overlap_max
-            unit_amp
-            amp_thresh
+%             loaded_chan(iChan).chan_dir
+%             iUnit
+%             unit_firings_name
+%             
+%             unit_snr
+%             snr_min
+%             unit_noise_overlap
+%             noise_overlap_max
+%             unit_amp
+%             amp_thresh
             
             if (unit_snr >= snr_min) && (unit_noise_overlap <= noise_overlap_max) && (unit_amp < amp_thresh)
                 
@@ -734,7 +734,38 @@ function loaded_chan = load_chan_dirs(channel_dirs, split_path, parser)
 
         isol_metrics_fpath = [channel_dir '/' isol_metrics_fname];
         isol_metrics = readjson(isol_metrics_fpath);
+        
+        
+        
+        %replace any nulls in json output with NaNs, this happens when you
+        %have bogus units detected but maybe only contain a single spike
+        
+        for iUnit = 1:length(isol_metrics.clusters)
+            
+            if isempty(isol_metrics.clusters(iUnit).metrics.peak_amp)
+                isol_metrics.clusters(iUnit).metrics.peak_amp = NaN;
+            end
 
+            if isempty(isol_metrics.clusters(iUnit).metrics.peak_noise)
+                isol_metrics.clusters(iUnit).metrics.peak_noise = NaN;
+            end
+
+            if isempty(isol_metrics.clusters(iUnit).metrics.peak_snr)
+                isol_metrics.clusters(iUnit).metrics.peak_snr = NaN;
+            end
+            
+            if isempty(isol_metrics.clusters(iUnit).metrics.isolation)
+                isol_metrics.clusters(iUnit).metrics.isolation = NaN;
+            end
+            
+            if isempty(isol_metrics.clusters(iUnit).metrics.noise_overlap)
+                isol_metrics.clusters(iUnit).metrics.noise_overlap = NaN;
+            end
+            
+        end
+        
+        
+        
         isol_pair_metrics_fpath = [channel_dir '/' isol_pair_metrics_fname];
         isol_pair_metrics = readjson(isol_pair_metrics_fpath);
 

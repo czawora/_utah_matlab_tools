@@ -173,7 +173,7 @@ if ~skip_plots
         if any(large_amp_units_filt)
 
             plotChannelSpikes('session_name', session_name, ...
-                              'channel_name', chan_name, ...
+                              'channel_name', [chan_name '_ampFilterInf'], ...
                               'clip_features_fpath', loaded_chan(iChan).clips_whiten_features_fpath, ...
                               'clips', loaded_chan(iChan).clips_whiten, ...
                               'firings', loaded_chan(iChan).firings, ...
@@ -500,6 +500,13 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             unit_snr = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.peak_snr;
             unit_noise_overlap = loaded_chan(iChan).isol_metrics.clusters(iUnit).metrics.noise_overlap;
             
+            if isempty(unit_snr)
+                unit_snr = -999;
+            end
+            
+            if isempty(unit_snr)
+                unit_snr = -999;
+            end            
             
             %not for exclusion in spikeInfo, only exclusion in plotting
             if unit_amp > largeAmpThrehold_ifSet
@@ -509,7 +516,18 @@ function [sessUnitSummary, sessUniqueUnitID, timeStamp, jackTableUsed, extractIn
             end
             
             isol_pair_relabel = '';
-                        
+            
+            loaded_chan(iChan).chan_dir
+            iUnit
+            unit_firings_name
+            
+            unit_snr
+            snr_min
+            unit_noise_overlap
+            noise_overlap_max
+            unit_amp
+            amp_thresh
+            
             if (unit_snr >= snr_min) && (unit_noise_overlap <= noise_overlap_max) && (unit_amp < amp_thresh)
                 
                 good_units = [good_units 1];
